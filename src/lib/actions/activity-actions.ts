@@ -34,6 +34,17 @@ export async function createActivity(
   const nextOrder =
     existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
+  // Inherit color from parent group
+  let color = "#3B82F6";
+  if (parentId && !isGroup) {
+    const { data: parent } = await admin
+      .from("activities")
+      .select("color")
+      .eq("id", parentId)
+      .single();
+    if (parent?.color) color = parent.color;
+  }
+
   const { data, error } = await admin
     .from("activities")
     .insert({
@@ -42,6 +53,7 @@ export async function createActivity(
       sort_order: nextOrder,
       parent_id: parentId,
       is_group: isGroup,
+      color,
     })
     .select()
     .single();
