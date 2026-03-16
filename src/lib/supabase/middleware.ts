@@ -40,13 +40,17 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && !isAuthPage && !isPublicPage) {
     const url = request.nextUrl.clone();
+    const returnTo = request.nextUrl.pathname + request.nextUrl.search;
     url.pathname = "/login";
+    url.searchParams.set("next", returnTo);
     return NextResponse.redirect(url);
   }
 
   if (user && isAuthPage) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    const next = request.nextUrl.searchParams.get("next");
+    url.pathname = next || "/dashboard";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
