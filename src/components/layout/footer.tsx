@@ -2,7 +2,11 @@ import Image from "next/image";
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-400 py-4 px-6 flex items-center justify-center gap-3 text-sm print:hidden" data-print-hide>
+    <footer
+      className="text-white/70 py-4 px-6 flex items-center justify-center gap-3 text-sm"
+      style={{ backgroundColor: "#1e3a5f" }}
+      data-print-hide
+    >
       <Image
         src="/acp-logo.svg"
         alt="ACP Michigan"

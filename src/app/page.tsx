@@ -13,33 +13,35 @@ export default async function LandingPage() {
   if (user) redirect("/dashboard");
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
       <header className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Horizon</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Horizon Gantt</h1>
           <Link
             href="/login"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+            className="px-4 py-2 text-white rounded-lg transition-colors font-medium text-sm"
+            style={{ backgroundColor: "#1e3a5f" }}
           >
             Sign In
           </Link>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-20">
+      <main className="flex-1 max-w-6xl mx-auto px-4 py-20 w-full">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900 mb-4">
-            Gantt chart planning,
+            Project planning,
             <br />
-            <span className="text-blue-600">simplified.</span>
+            <span style={{ color: "#C11616" }}>made visual.</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Create, share, and collaborate on Gantt charts with your team.
-            Drag-and-drop scheduling with dependency management.
+            Plan, schedule, and collaborate with interactive Gantt charts.
+            Drag-and-drop timelines with dependency management built in.
           </p>
           <Link
             href="/login"
-            className="inline-flex px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+            className="inline-flex px-6 py-3 text-white rounded-lg transition-colors font-semibold text-lg hover:opacity-90"
+            style={{ backgroundColor: "#1e3a5f" }}
           >
             Get Started Free
           </Link>
@@ -72,7 +74,7 @@ export default async function LandingPage() {
               key={feature.title}
               className="p-6 bg-gray-50 rounded-xl border border-gray-100"
             >
-              <feature.icon size={28} className="text-blue-600 mb-3" />
+              <feature.icon size={28} className="mb-3" style={{ color: "#C11616" }} />
               <h3 className="font-semibold text-gray-900 mb-1">
                 {feature.title}
               </h3>

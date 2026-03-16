@@ -56,7 +56,7 @@ export function Sidebar({
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         {!collapsed && (
           <Link href="/dashboard" className="text-xl font-bold text-gray-900">
-            Horizon
+            Horizon Gantt
           </Link>
         )}
         <button
