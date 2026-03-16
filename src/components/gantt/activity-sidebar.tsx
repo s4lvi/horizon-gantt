@@ -9,6 +9,9 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -17,7 +20,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Activity, Profile } from "@/lib/types";
+import { Activity, DisplayRow, Profile } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import {
   createActivity,
@@ -25,18 +28,29 @@ import {
   updateActivity,
   bulkUpdateActivities,
 } from "@/lib/actions/activity-actions";
-import { GripVertical, Plus, Trash2, X } from "lucide-react";
+import {
+  GripVertical,
+  Plus,
+  Trash2,
+  ChevronRight,
+  ChevronDown,
+  FolderOpen,
+  FolderClosed,
+  ArrowUpFromLine,
+} from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { toast } from "sonner";
 
 function SortableRow({
-  activity,
+  row,
   rowHeight,
   chartId,
+  isDropTarget,
 }: {
-  activity: Activity;
+  row: DisplayRow;
   rowHeight: number;
   chartId: string;
+  isDropTarget: boolean;
 }) {
   const {
     canEdit,
@@ -44,7 +58,10 @@ function SortableRow({
     setSelectedActivityId,
     updateActivity: updateActivityStore,
     removeActivity,
+    toggleGroupCollapsed,
   } = useGanttStore();
+
+  const activity = row.activity;
 
   const {
     attributes,
@@ -87,82 +104,164 @@ function SortableRow({
     }
   };
 
+  const handleAddChild = async () => {
+    try {
+      const newActivity = await createActivity(chartId, activity.id, false);
+      useGanttStore.getState().addActivity(newActivity);
+      const store = useGanttStore.getState();
+      if (store.collapsedGroupIds.has(activity.id)) {
+        store.toggleGroupCollapsed(activity.id);
+      }
+    } catch {
+      toast.error("Failed to add activity");
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center gap-1 px-2 border-b border-gray-100 group",
+        "flex items-center gap-1 border-b border-gray-100 group/row",
         isDragging && "opacity-50 bg-gray-50",
-        isSelected && "bg-blue-50"
+        isSelected && "bg-blue-50",
+        row.isGroup && "bg-gray-50/50",
+        isDropTarget && row.isGroup && "ring-2 ring-inset ring-blue-400 bg-blue-50"
       )}
     >
-      {canEdit && (
-        <button
-          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical size={14} />
-        </button>
-      )}
-
       <div
-        className="w-3 h-3 rounded-full flex-shrink-0"
-        style={{ backgroundColor: activity.color }}
-      />
+        className="flex items-center gap-1 flex-1 min-w-0"
+        style={{ paddingLeft: 4 + row.depth * 20 }}
+      >
+        {canEdit && (
+          <button
+            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical size={14} />
+          </button>
+        )}
 
-      {editing && canEdit ? (
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={handleTitleSave}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-            if (e.key === "Escape") {
-              setTitle(activity.title);
-              setEditing(false);
-            }
-          }}
-          autoFocus
-          className="flex-1 text-sm bg-transparent outline-none border-b border-blue-400 min-w-0"
-        />
-      ) : (
-        <span
-          className="flex-1 text-sm text-gray-700 truncate cursor-pointer min-w-0"
-          onClick={() => {
-            if (canEdit) setEditing(true);
-            setSelectedActivityId(isSelected ? null : activity.id);
-          }}
-        >
-          {activity.title}
-        </span>
-      )}
+        {row.isGroup ? (
+          <button
+            onClick={() => toggleGroupCollapsed(activity.id)}
+            className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+          >
+            {row.isCollapsed ? (
+              <ChevronRight size={14} />
+            ) : (
+              <ChevronDown size={14} />
+            )}
+          </button>
+        ) : (
+          <div
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ backgroundColor: activity.color }}
+          />
+        )}
 
-      {canEdit && (
-        <button
-          onClick={handleDelete}
-          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 flex-shrink-0 transition-opacity"
-        >
-          <Trash2 size={14} />
-        </button>
+        {row.isGroup && (
+          <span className="flex-shrink-0 text-gray-400">
+            {row.isCollapsed ? (
+              <FolderClosed size={14} />
+            ) : (
+              <FolderOpen size={14} />
+            )}
+          </span>
+        )}
+
+        {editing && canEdit ? (
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={handleTitleSave}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              if (e.key === "Escape") {
+                setTitle(activity.title);
+                setEditing(false);
+              }
+            }}
+            autoFocus
+            className="flex-1 text-sm bg-transparent outline-none border-b border-blue-400 min-w-0"
+          />
+        ) : (
+          <span
+            className={cn(
+              "flex-1 text-sm truncate cursor-pointer min-w-0",
+              row.isGroup
+                ? "font-semibold text-gray-800"
+                : "text-gray-700"
+            )}
+            onClick={() => {
+              if (canEdit) setEditing(true);
+              setSelectedActivityId(isSelected ? null : activity.id);
+            }}
+          >
+            {activity.title}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-0.5 pr-1 flex-shrink-0">
+        {canEdit && row.isGroup && (
+          <button
+            onClick={handleAddChild}
+            className="opacity-0 group-hover/row:opacity-100 text-gray-300 hover:text-blue-500 transition-opacity"
+            title="Add sub-activity"
+          >
+            <Plus size={14} />
+          </button>
+        )}
+
+        {canEdit && (
+          <button
+            onClick={handleDelete}
+            className="opacity-0 group-hover/row:opacity-100 text-gray-300 hover:text-red-500 transition-opacity"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UngroupDropZone({ isOver }: { isOver: boolean }) {
+  const { setNodeRef } = useDroppable({ id: "__ungroup__" });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex items-center justify-center gap-2 py-2 mx-2 my-1 rounded-lg border-2 border-dashed text-xs transition-colors",
+        isOver
+          ? "border-blue-400 bg-blue-50 text-blue-600"
+          : "border-gray-200 text-gray-400"
       )}
+    >
+      <ArrowUpFromLine size={12} />
+      Drop here to ungroup
     </div>
   );
 }
 
 export function ActivitySidebar({
-  activities,
+  displayRows,
   chartId,
   members,
   rowHeight,
 }: {
-  activities: Activity[];
+  displayRows: DisplayRow[];
   chartId: string;
   members: Profile[];
   rowHeight: number;
 }) {
-  const { canEdit, reorderActivities } = useGanttStore();
+  const { canEdit, activities } = useGanttStore();
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [overGroupId, setOverGroupId] = useState<string | null>(null);
+  const [overUngroup, setOverUngroup] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -171,26 +270,155 @@ export function ActivitySidebar({
     })
   );
 
+  // Show ungroup zone when dragging a child activity
+  const draggedActivity = draggedId
+    ? activities.find((a) => a.id === draggedId)
+    : null;
+  const showUngroupZone =
+    draggedActivity && !draggedActivity.is_group && draggedActivity.parent_id !== null;
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggedId(event.active.id as string);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) {
+      setOverGroupId(null);
+      setOverUngroup(false);
+      return;
+    }
+
+    if (over.id === "__ungroup__") {
+      setOverGroupId(null);
+      setOverUngroup(true);
+      return;
+    }
+    setOverUngroup(false);
+
+    const dragged = activities.find((a) => a.id === active.id);
+    if (dragged?.is_group) {
+      setOverGroupId(null);
+      return;
+    }
+
+    const overRow = displayRows.find((r) => r.activity.id === over.id);
+    if (!overRow) {
+      setOverGroupId(null);
+      return;
+    }
+
+    if (overRow.isGroup && over.id !== active.id) {
+      setOverGroupId(overRow.activity.id);
+    } else if (overRow.activity.parent_id && over.id !== active.id) {
+      setOverGroupId(overRow.activity.parent_id);
+    } else {
+      setOverGroupId(null);
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setDraggedId(null);
+    setOverGroupId(null);
+    setOverUngroup(false);
+
     if (!over || active.id === over.id) return;
 
-    const oldIndex = activities.findIndex((a) => a.id === active.id);
-    const newIndex = activities.findIndex((a) => a.id === over.id);
+    const dragged = activities.find((a) => a.id === active.id);
+    if (!dragged) return;
 
-    reorderActivities(oldIndex, newIndex);
-
-    // Persist new order
     const store = useGanttStore.getState();
-    const updates = store.activities.map((a) => ({
-      id: a.id,
-      sort_order: a.sort_order,
-    }));
-    try {
-      await bulkUpdateActivities(updates);
-    } catch {
-      toast.error("Failed to save order");
+
+    // Handle ungroup drop zone
+    if (over.id === "__ungroup__") {
+      store.reorderWithinParent(dragged.id, null, null, "after");
+      const updated = useGanttStore.getState().activities;
+      try {
+        await bulkUpdateActivities(
+          updated.map((a) => ({
+            id: a.id,
+            sort_order: a.sort_order,
+            ...(a.id === dragged.id ? { parent_id: null } : {}),
+          }))
+        );
+      } catch {
+        toast.error("Failed to save changes");
+      }
+      return;
     }
+
+    const overRow = displayRows.find((r) => r.activity.id === over.id);
+    if (!overRow) return;
+
+    // Determine new parent
+    let newParentId: string | null = null;
+    let targetSiblingId: string | null = overRow.activity.id;
+    let position: "before" | "after" = "after";
+
+    if (dragged.is_group) {
+      // Groups stay top-level, just reorder
+      newParentId = null;
+      // If dropped on another group, place after it
+      if (overRow.isGroup) {
+        targetSiblingId = overRow.activity.id;
+        position = "after";
+      } else {
+        // Dropped on a non-group top-level item or child — find nearest top-level
+        targetSiblingId = overRow.activity.parent_id || overRow.activity.id;
+        position = "after";
+      }
+    } else if (overRow.isGroup) {
+      // Dropped on a group -> become child at the end
+      newParentId = overRow.activity.id;
+      targetSiblingId = null; // append at end
+      position = "after";
+    } else if (overRow.activity.parent_id) {
+      // Dropped on a child -> become sibling
+      newParentId = overRow.activity.parent_id;
+      targetSiblingId = overRow.activity.id;
+      // Determine position based on drag direction
+      const oldIdx = displayRows.findIndex((r) => r.activity.id === active.id);
+      const newIdx = displayRows.findIndex((r) => r.activity.id === over.id);
+      position = oldIdx < newIdx ? "after" : "before";
+    } else {
+      // Dropped on top-level non-group -> become top-level
+      newParentId = null;
+      targetSiblingId = overRow.activity.id;
+      const oldIdx = displayRows.findIndex((r) => r.activity.id === active.id);
+      const newIdx = displayRows.findIndex((r) => r.activity.id === over.id);
+      position = oldIdx < newIdx ? "after" : "before";
+    }
+
+    // Auto-expand target group
+    if (newParentId && store.collapsedGroupIds.has(newParentId)) {
+      store.toggleGroupCollapsed(newParentId);
+    }
+
+    store.reorderWithinParent(dragged.id, newParentId, targetSiblingId, position);
+
+    // Persist all changes
+    const updatedActivities = useGanttStore.getState().activities;
+    const parentChanged = dragged.parent_id !== newParentId;
+    try {
+      await bulkUpdateActivities(
+        updatedActivities.map((a) => ({
+          id: a.id,
+          sort_order: a.sort_order,
+          ...(a.id === dragged.id && parentChanged
+            ? { parent_id: newParentId }
+            : {}),
+        }))
+      );
+    } catch {
+      toast.error("Failed to save changes");
+    }
+  };
+
+  const handleDragCancel = () => {
+    setDraggedId(null);
+    setOverGroupId(null);
+    setOverUngroup(false);
   };
 
   const handleAddActivity = async () => {
@@ -202,6 +430,15 @@ export function ActivitySidebar({
     }
   };
 
+  const handleAddGroup = async () => {
+    try {
+      const newGroup = await createActivity(chartId, null, true);
+      useGanttStore.getState().addActivity(newGroup);
+    } catch {
+      toast.error("Failed to add group");
+    }
+  };
+
   return (
     <div className="w-60 border-r border-gray-200 bg-white flex flex-col flex-shrink-0">
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50">
@@ -209,12 +446,22 @@ export function ActivitySidebar({
           Activities
         </span>
         {canEdit && (
-          <button
-            onClick={handleAddActivity}
-            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-          >
-            <Plus size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleAddGroup}
+              className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              title="Add group"
+            >
+              <FolderClosed size={14} />
+            </button>
+            <button
+              onClick={handleAddActivity}
+              className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              title="Add activity"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
         )}
       </div>
 
@@ -222,21 +469,33 @@ export function ActivitySidebar({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
         >
           <SortableContext
-            items={activities.map((a) => a.id)}
+            items={displayRows.map((r) => r.activity.id)}
             strategy={verticalListSortingStrategy}
           >
-            {activities.map((activity) => (
+            {displayRows.map((row) => (
               <SortableRow
-                key={activity.id}
-                activity={activity}
+                key={row.activity.id}
+                row={row}
                 rowHeight={rowHeight}
                 chartId={chartId}
+                isDropTarget={
+                  overGroupId === row.activity.id &&
+                  draggedId !== row.activity.id
+                }
               />
             ))}
           </SortableContext>
+
+          {/* Ungroup drop zone — shown when dragging a child activity */}
+          {showUngroupZone && (
+            <UngroupDropZone isOver={overUngroup} />
+          )}
         </DndContext>
       </div>
     </div>

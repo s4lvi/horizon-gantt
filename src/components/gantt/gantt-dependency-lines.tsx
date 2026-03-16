@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Activity, Dependency } from "@/lib/types";
+import { DisplayRow, Dependency } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { dateToPixel } from "@/lib/utils/dates";
 import { parseISO, addDays } from "date-fns";
@@ -11,19 +11,20 @@ import { hasCycle } from "@/lib/utils/dependency-engine";
 import { toast } from "sonner";
 
 export function GanttDependencyLines({
-  activities,
+  displayRows,
   dependencies,
   timelineStart,
   columnWidth,
   rowHeight,
 }: {
-  activities: Activity[];
+  displayRows: DisplayRow[];
   dependencies: Dependency[];
   timelineStart: Date;
   columnWidth: number;
   rowHeight: number;
 }) {
-  const { viewMode, addDependency, removeDependency } = useGanttStore();
+  const { viewMode, activities, addDependency, removeDependency } =
+    useGanttStore();
 
   useEffect(() => {
     const handler = async (e: Event) => {
@@ -49,22 +50,40 @@ export function GanttDependencyLines({
     return () => window.removeEventListener("complete-link", handler);
   }, [dependencies, activities, addDependency]);
 
-  const getBarPosition = (activity: Activity) => {
-    if (!activity.start_date || !activity.end_date) return null;
+  // Build a set of visible activity IDs from display rows
+  const visibleIds = new Set(displayRows.map((r) => r.activity.id));
+
+  const getBarPosition = (activityId: string) => {
+    const rowIndex = displayRows.findIndex(
+      (r) => r.activity.id === activityId
+    );
+    if (rowIndex === -1) return null;
+
+    const row = displayRows[rowIndex];
+    const startDateStr =
+      row.isGroup && row.isCollapsed
+        ? row.groupStartDate
+        : row.activity.start_date;
+    const endDateStr =
+      row.isGroup && row.isCollapsed
+        ? row.groupEndDate
+        : row.activity.end_date;
+
+    if (!startDateStr || !endDateStr) return null;
+
     const start = dateToPixel(
-      parseISO(activity.start_date),
+      parseISO(startDateStr),
       timelineStart,
       viewMode,
       columnWidth
     );
     const end = dateToPixel(
-      addDays(parseISO(activity.end_date), 1),
+      addDays(parseISO(endDateStr), 1),
       timelineStart,
       viewMode,
       columnWidth
     );
-    const index = activities.findIndex((a) => a.id === activity.id);
-    const y = index * rowHeight + rowHeight / 2;
+    const y = rowIndex * rowHeight + rowHeight / 2;
     return { startX: start, endX: end, y };
   };
 
@@ -80,14 +99,15 @@ export function GanttDependencyLines({
   return (
     <svg className="absolute inset-0 pointer-events-none overflow-visible">
       {dependencies.map((dep) => {
-        const predecessor = activities.find(
-          (a) => a.id === dep.predecessor_id
-        );
-        const successor = activities.find((a) => a.id === dep.successor_id);
-        if (!predecessor || !successor) return null;
+        // Skip dependencies where either end is not visible
+        if (
+          !visibleIds.has(dep.predecessor_id) ||
+          !visibleIds.has(dep.successor_id)
+        )
+          return null;
 
-        const predPos = getBarPosition(predecessor);
-        const succPos = getBarPosition(successor);
+        const predPos = getBarPosition(dep.predecessor_id);
+        const succPos = getBarPosition(dep.successor_id);
         if (!predPos || !succPos) return null;
 
         const startX = predPos.endX;
@@ -101,7 +121,6 @@ export function GanttDependencyLines({
 
         return (
           <g key={dep.id}>
-            {/* Clickable invisible wide path for deletion */}
             <path
               d={path}
               fill="none"
@@ -109,9 +128,7 @@ export function GanttDependencyLines({
               strokeWidth={12}
               className="pointer-events-auto cursor-pointer"
               onClick={() => {
-                if (
-                  confirm("Remove this dependency?")
-                ) {
+                if (confirm("Remove this dependency?")) {
                   handleRemoveDep(dep.id);
                 }
               }}
@@ -123,7 +140,6 @@ export function GanttDependencyLines({
               strokeWidth={1.5}
               strokeDasharray="4 2"
             />
-            {/* Arrowhead */}
             <polygon
               points={`${endX},${endY} ${endX - 6},${endY - 4} ${endX - 6},${endY + 4}`}
               fill="#94a3b8"

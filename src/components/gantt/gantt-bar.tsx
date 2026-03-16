@@ -1,39 +1,38 @@
 "use client";
 
-import { useCallback, useRef } from "react";
-import { Activity } from "@/lib/types";
+import { useRef } from "react";
+import { DisplayRow } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
-import { dateToPixel, pixelToDate, columnIndexToDate } from "@/lib/utils/dates";
+import { dateToPixel, pixelToDate } from "@/lib/utils/dates";
 import { updateActivity } from "@/lib/actions/activity-actions";
 import { cascadeDependencies } from "@/lib/utils/dependency-engine";
 import { bulkUpdateActivities } from "@/lib/actions/activity-actions";
-import { parseISO, differenceInDays, addDays, format } from "date-fns";
+import { parseISO, addDays, format } from "date-fns";
 import { cn } from "@/lib/utils/cn";
 import { toast } from "sonner";
 import { Link2 } from "lucide-react";
 
 export function GanttBar({
-  activity,
+  displayRow,
   index,
   timelineStart,
   columnWidth,
   rowHeight,
   chartId,
 }: {
-  activity: Activity;
+  displayRow: DisplayRow;
   index: number;
   timelineStart: Date;
   columnWidth: number;
   rowHeight: number;
   chartId: string;
 }) {
+  const activity = displayRow.activity;
   const {
     viewMode,
     canEdit,
-    dragState,
     linkState,
     activities,
-    dependencies,
     setDragState,
     setLinkState,
     updateActivity: updateActivityStore,
@@ -47,8 +46,61 @@ export function GanttBar({
   const top = index * rowHeight + 6;
   const barHeight = rowHeight - 12;
 
-  if (!activity.start_date || !activity.end_date) {
-    // No dates - show a clickable placeholder row
+  // Determine which dates to use
+  const effectiveStartDate =
+    displayRow.isGroup && displayRow.isCollapsed
+      ? displayRow.groupStartDate
+      : activity.start_date;
+  const effectiveEndDate =
+    displayRow.isGroup && displayRow.isCollapsed
+      ? displayRow.groupEndDate
+      : activity.end_date;
+
+  // Expanded group with no own dates: render a thin translucent bar from children range
+  if (displayRow.isGroup && !displayRow.isCollapsed) {
+    if (!displayRow.groupStartDate || !displayRow.groupEndDate) {
+      return (
+        <div
+          className="absolute"
+          style={{ top, left: 0, right: 0, height: barHeight }}
+        />
+      );
+    }
+    const startDate = parseISO(displayRow.groupStartDate);
+    const endDate = parseISO(displayRow.groupEndDate);
+    const left = dateToPixel(startDate, timelineStart, viewMode, columnWidth);
+    const right = dateToPixel(
+      addDays(endDate, 1),
+      timelineStart,
+      viewMode,
+      columnWidth
+    );
+    const width = Math.max(right - left, columnWidth);
+    return (
+      <div
+        className="absolute rounded-sm"
+        style={{
+          top: top + barHeight / 2 - 3,
+          left,
+          width,
+          height: 6,
+          backgroundColor: activity.color,
+          opacity: 0.25,
+        }}
+      />
+    );
+  }
+
+  // No dates set — clickable placeholder
+  if (!effectiveStartDate || !effectiveEndDate) {
+    if (displayRow.isGroup) {
+      return (
+        <div
+          className="absolute"
+          style={{ top, left: 0, right: 0, height: barHeight }}
+        />
+      );
+    }
     return (
       <div
         className="absolute cursor-pointer group"
@@ -78,8 +130,8 @@ export function GanttBar({
     );
   }
 
-  const startDate = parseISO(activity.start_date);
-  const endDate = parseISO(activity.end_date);
+  const startDate = parseISO(effectiveStartDate);
+  const endDate = parseISO(effectiveEndDate);
   const left = dateToPixel(startDate, timelineStart, viewMode, columnWidth);
   const right = dateToPixel(
     addDays(endDate, 1),
@@ -89,20 +141,19 @@ export function GanttBar({
   );
   const width = Math.max(right - left, columnWidth);
 
+  // Collapsed group bar — not draggable
+  const isCollapsedGroup = displayRow.isGroup && displayRow.isCollapsed;
+
   const handleMouseDown = (
     e: React.MouseEvent,
     type: "move" | "resize-start" | "resize-end"
   ) => {
-    if (!canEdit) return;
+    if (!canEdit || isCollapsedGroup) return;
     e.preventDefault();
     e.stopPropagation();
 
-    if (linkState) {
-      // We're in link mode, clicking a bar completes the link
-      return;
-    }
+    if (linkState) return;
 
-    // Capture initial scroll position to account for scroll during drag
     const scrollContainer = barRef.current?.closest(".overflow-auto");
     const initialScrollLeft = scrollContainer?.scrollLeft ?? 0;
 
@@ -152,12 +203,7 @@ export function GanttBar({
       window.removeEventListener("mouseup", handleMouseUp);
       setDragState(null);
 
-      // Get the updated activity from the store
       const store = useGanttStore.getState();
-      const updated = store.activities.find((a) => a.id === activity.id);
-      if (!updated) return;
-
-      // Cascade dependencies
       const cascaded = cascadeDependencies(
         store.activities,
         store.dependencies,
@@ -165,7 +211,6 @@ export function GanttBar({
       );
       setActivities(cascaded);
 
-      // Persist changes
       const changed = cascaded.filter((a) => {
         const orig = activities.find((o) => o.id === a.id);
         return (
@@ -195,7 +240,10 @@ export function GanttBar({
     <div
       ref={barRef}
       className={cn(
-        "absolute rounded-md cursor-grab active:cursor-grabbing group select-none flex items-center",
+        "absolute rounded-md select-none flex items-center group",
+        isCollapsedGroup
+          ? "cursor-default"
+          : "cursor-grab active:cursor-grabbing",
         isSelected && "ring-2 ring-blue-500 ring-offset-1"
       )}
       style={{
@@ -204,12 +252,19 @@ export function GanttBar({
         width,
         height: barHeight,
         backgroundColor: activity.color,
+        ...(isCollapsedGroup && {
+          backgroundImage: `repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 4px,
+            rgba(255,255,255,0.15) 4px,
+            rgba(255,255,255,0.15) 8px
+          )`,
+        }),
       }}
       onClick={(e) => {
         e.stopPropagation();
         if (linkState) {
-          // Complete linking: first-clicked is the successor (dependent),
-          // second-clicked is the predecessor (dependency)
           const successorId = linkState.fromActivityId;
           if (successorId !== activity.id) {
             window.dispatchEvent(
@@ -224,6 +279,7 @@ export function GanttBar({
         setSelectedActivityId(isSelected ? null : activity.id);
       }}
       onMouseDown={(e) => {
+        if (isCollapsedGroup) return;
         const rect = barRef.current?.getBoundingClientRect();
         if (!rect) return;
         const relX = e.clientX - rect.left;
@@ -238,17 +294,21 @@ export function GanttBar({
         }
       }}
     >
-      {/* Resize handles */}
-      <div className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize opacity-0 group-hover:opacity-100 bg-black/10 rounded-l-md" />
-      <div className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize opacity-0 group-hover:opacity-100 bg-black/10 rounded-r-md" />
+      {/* Resize handles (not for collapsed groups) */}
+      {!isCollapsedGroup && (
+        <>
+          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize opacity-0 group-hover:opacity-100 bg-black/10 rounded-l-md" />
+          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize opacity-0 group-hover:opacity-100 bg-black/10 rounded-r-md" />
+        </>
+      )}
 
       {/* Bar content */}
       <span className="text-xs text-white font-medium px-2 truncate drop-shadow-sm">
         {activity.title}
       </span>
 
-      {/* Link button - positioned fully outside the bar to not interfere with resize */}
-      {canEdit && (
+      {/* Link button — not for groups */}
+      {canEdit && !displayRow.isGroup && (
         <button
           className="absolute -right-7 top-1/2 -translate-y-1/2 w-5 h-5 bg-white border border-gray-300 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-blue-50 hover:border-blue-400 transition-all shadow-sm z-10"
           onMouseDown={(e) => e.stopPropagation()}

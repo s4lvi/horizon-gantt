@@ -3,7 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function createActivity(chartId: string) {
+export async function createActivity(
+  chartId: string,
+  parentId: string | null = null,
+  isGroup: boolean = false
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -12,13 +16,21 @@ export async function createActivity(chartId: string) {
 
   const admin = createAdminClient();
 
-  const { data: existing } = await admin
+  // Get next sort_order scoped to the same parent
+  let query = admin
     .from("activities")
     .select("sort_order")
     .eq("chart_id", chartId)
     .order("sort_order", { ascending: false })
     .limit(1);
 
+  if (parentId) {
+    query = query.eq("parent_id", parentId);
+  } else {
+    query = query.is("parent_id", null);
+  }
+
+  const { data: existing } = await query;
   const nextOrder =
     existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
@@ -26,8 +38,10 @@ export async function createActivity(chartId: string) {
     .from("activities")
     .insert({
       chart_id: chartId,
-      title: "New Activity",
+      title: isGroup ? "New Group" : "New Activity",
       sort_order: nextOrder,
+      parent_id: parentId,
+      is_group: isGroup,
     })
     .select()
     .single();
@@ -45,6 +59,8 @@ export async function updateActivity(
     color?: string;
     assignee_id?: string | null;
     sort_order?: number;
+    parent_id?: string | null;
+    is_group?: boolean;
   }
 ) {
   const supabase = await createClient();
@@ -83,6 +99,7 @@ export async function bulkUpdateActivities(
     start_date?: string;
     end_date?: string;
     sort_order?: number;
+    parent_id?: string | null;
   }[]
 ) {
   const supabase = await createClient();

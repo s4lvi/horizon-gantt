@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Activity, Profile } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { updateActivity } from "@/lib/actions/activity-actions";
@@ -23,8 +22,12 @@ export function ActivityForm({
   members: Profile[];
   chartId: string;
 }) {
-  const { updateActivity: updateStore, setSelectedActivityId } =
+  const { activities, updateActivity: updateStore, setSelectedActivityId } =
     useGanttStore();
+
+  const groups = activities.filter(
+    (a) => a.is_group && a.id !== activity.id
+  );
 
   const handleUpdate = async (updates: Partial<Activity>) => {
     updateStore(activity.id, updates);
@@ -39,7 +42,7 @@ export function ActivityForm({
     <div className="border-t border-gray-200 bg-white px-4 py-3">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-700">
-          Activity Details
+          {activity.is_group ? "Group Details" : "Activity Details"}
         </h3>
         <button
           onClick={() => setSelectedActivityId(null)}
@@ -61,36 +64,64 @@ export function ActivityForm({
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">
-            Assignee
-          </label>
-          <select
-            value={activity.assignee_id || ""}
-            onChange={(e) =>
-              handleUpdate({
-                assignee_id: e.target.value || null,
-              })
-            }
-            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          >
-            <option value="">Unassigned</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.full_name || m.email}
-              </option>
-            ))}
-          </select>
-        </div>
+        {!activity.is_group && (
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Assignee
+            </label>
+            <select
+              value={activity.assignee_id || ""}
+              onChange={(e) =>
+                handleUpdate({ assignee_id: e.target.value || null })
+              }
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="">Unassigned</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.full_name || m.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {!activity.is_group && groups.length > 0 && (
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Group
+            </label>
+            <select
+              value={activity.parent_id || ""}
+              onChange={(e) =>
+                handleUpdate({ parent_id: e.target.value || null })
+              }
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="">No group</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">
             Dates
           </label>
-          <div className="text-sm text-gray-600">
-            {formatDateShort(activity.start_date)} →{" "}
-            {formatDateShort(activity.end_date)}
-          </div>
+          {activity.is_group ? (
+            <div className="text-xs text-gray-400 italic">
+              Computed from children
+            </div>
+          ) : (
+            <div className="text-sm text-gray-600">
+              {formatDateShort(activity.start_date)} →{" "}
+              {formatDateShort(activity.end_date)}
+            </div>
+          )}
         </div>
 
         <div>

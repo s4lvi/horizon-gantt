@@ -67,9 +67,20 @@ export type Activity = {
   color: string;
   assignee_id: string | null;
   sort_order: number;
+  parent_id: string | null;
+  is_group: boolean;
   created_at: string;
   updated_at: string;
   profiles?: Profile | null;
+};
+
+export type DisplayRow = {
+  activity: Activity;
+  depth: number;
+  isGroup: boolean;
+  isCollapsed: boolean;
+  groupStartDate: string | null;
+  groupEndDate: string | null;
 };
 
 export type DependencyType = "finish_to_start";

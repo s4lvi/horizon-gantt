@@ -12,6 +12,7 @@ import { TimelineControls } from "./timeline-controls";
 import { ActivityForm } from "./activity-form";
 import { ShareDialog } from "./share-dialog";
 import { getTimelineRange, getColumns, getColumnWidth } from "@/lib/utils/dates";
+import { buildDisplayRows } from "@/lib/utils/display-rows";
 import { Toaster } from "sonner";
 
 const ROW_HEIGHT = 44;
@@ -38,6 +39,7 @@ export function GanttChart({
     dependencies,
     viewMode,
     selectedActivityId,
+    collapsedGroupIds,
     setActivities,
     setDependencies,
     setCanEdit,
@@ -51,16 +53,15 @@ export function GanttChart({
     setCanEdit(canEdit);
   }, [initialActivities, initialDependencies, canEdit, setActivities, setDependencies, setCanEdit]);
 
-  const sortedActivities = [...activities].sort(
-    (a, b) => a.sort_order - b.sort_order
-  );
+  const displayRows = buildDisplayRows(activities, collapsedGroupIds);
 
+  // Use ALL activities for timeline range (not just visible rows)
   const { start: timelineStart, end: timelineEnd } =
-    getTimelineRange(sortedActivities);
+    getTimelineRange(activities);
   const columns = getColumns(timelineStart, timelineEnd, viewMode);
   const columnWidth = getColumnWidth(viewMode);
   const totalWidth = columns.length * columnWidth;
-  const totalHeight = sortedActivities.length * ROW_HEIGHT;
+  const totalHeight = displayRows.length * ROW_HEIGHT;
 
   const selectedActivity = selectedActivityId
     ? activities.find((a) => a.id === selectedActivityId)
@@ -73,7 +74,7 @@ export function GanttChart({
 
       <div className="flex flex-1 overflow-hidden">
         <ActivitySidebar
-          activities={sortedActivities}
+          displayRows={displayRows}
           chartId={chart.id}
           members={members}
           rowHeight={ROW_HEIGHT}
@@ -92,10 +93,10 @@ export function GanttChart({
                 columnWidth={columnWidth}
                 height={totalHeight}
               />
-              {sortedActivities.map((activity, index) => (
+              {displayRows.map((row, index) => (
                 <GanttBar
-                  key={activity.id}
-                  activity={activity}
+                  key={row.activity.id}
+                  displayRow={row}
                   index={index}
                   timelineStart={timelineStart}
                   columnWidth={columnWidth}
@@ -104,7 +105,7 @@ export function GanttChart({
                 />
               ))}
               <GanttDependencyLines
-                activities={sortedActivities}
+                displayRows={displayRows}
                 dependencies={dependencies}
                 timelineStart={timelineStart}
                 columnWidth={columnWidth}
