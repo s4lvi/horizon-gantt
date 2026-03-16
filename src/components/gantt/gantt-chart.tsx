@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Activity, Chart, Dependency, Profile } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { GanttHeader } from "./gantt-header";
@@ -62,6 +62,51 @@ export function GanttChart({
     setColumnWidth(getColumnWidth(viewMode));
   }, [viewMode, setColumnWidth]);
 
+  // Pinch-to-zoom on the timeline area
+  const pinchRef = useRef<{ startDist: number; startWidth: number } | null>(null);
+
+  useEffect(() => {
+    const el = timelineRef.current;
+    if (!el) return;
+
+    const getTouchDist = (e: TouchEvent) => {
+      const [a, b] = [e.touches[0], e.touches[1]];
+      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = {
+          startDist: getTouchDist(e),
+          startWidth: useGanttStore.getState().columnWidth,
+        };
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+        const dist = getTouchDist(e);
+        const scale = dist / pinchRef.current.startDist;
+        setColumnWidth(Math.round(pinchRef.current.startWidth * scale));
+      }
+    };
+
+    const handleTouchEnd = () => {
+      pinchRef.current = null;
+    };
+
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    el.addEventListener("touchend", handleTouchEnd);
+
+    return () => {
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchmove", handleTouchMove);
+      el.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [setColumnWidth]);
+
   // Sync vertical scroll between sidebar and timeline
   const handleTimelineScroll = useCallback(() => {
     if (isSyncing.current) return;
@@ -112,7 +157,7 @@ export function GanttChart({
         <h1 className="text-lg font-bold text-gray-900">{chart.title}</h1>
       </div>
 
-      <div className="flex flex-1 overflow-hidden print-chart-area" style={{ ["--print-total-width" as string]: `${printTotalWidth}px` }}>
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden print-chart-area" style={{ ["--print-total-width" as string]: `${printTotalWidth}px` }}>
         <ActivitySidebar
           displayRows={displayRows}
           chartId={chart.id}
@@ -124,10 +169,10 @@ export function GanttChart({
 
         <div
           ref={timelineRef}
-          className="flex-1 overflow-auto relative"
+          className="flex-1 min-h-0 overflow-auto relative"
           onScroll={handleTimelineScroll}
         >
-          <div style={{ width: totalWidth, minHeight: "100%" }}>
+          <div style={{ width: totalWidth }}>
             <GanttHeader
               columns={columns}
               columnWidth={columnWidth}

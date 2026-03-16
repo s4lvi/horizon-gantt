@@ -39,7 +39,7 @@ export function ActivityForm({
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white px-4 py-3" data-print-hide>
+    <div className="border-t border-gray-200 bg-white px-3 py-2 md:px-4 md:py-3 max-h-[50vh] overflow-y-auto md:max-h-none md:overflow-visible" data-print-hide>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-700">
           {activity.is_group ? "Group Details" : "Activity Details"}
@@ -52,7 +52,7 @@ export function ActivityForm({
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">
             Title

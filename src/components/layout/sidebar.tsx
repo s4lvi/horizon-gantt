@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Building2,
   LogOut,
-  Plus,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -19,59 +18,67 @@ import { useState } from "react";
 export function Sidebar({
   profile,
   organizations,
+  onNavigate,
+  compact,
 }: {
   profile: Profile | null;
   organizations: Organization[];
+  onNavigate?: () => void;
+  compact?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
+  const show = compact ? true : !collapsed;
+
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    onNavigate?.();
     router.push("/login");
   };
 
   const navItems = [
-    {
-      href: "/dashboard",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/organizations",
-      label: "Organizations",
-      icon: Building2,
-    },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/organizations", label: "Organizations", icon: Building2 },
   ];
 
   return (
     <aside
       className={cn(
-        "bg-white border-r border-gray-200 flex flex-col transition-all duration-200",
-        collapsed ? "w-16" : "w-64"
+        "bg-white flex flex-col transition-all duration-200",
+        compact ? "w-full" : "border-r border-gray-200",
+        !compact && (collapsed ? "w-16" : "w-64")
       )}
     >
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        {!collapsed && (
-          <Link href="/dashboard" className="text-xl font-bold text-gray-900" style={{ fontFamily: "'Eurostile', sans-serif" }}>
-            Horizon Gantt
-          </Link>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded hover:bg-gray-100 text-gray-500"
-        >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
-      </div>
+      {!compact && (
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          {show && (
+            <Link
+              href="/dashboard"
+              onClick={onNavigate}
+              className="text-xl font-bold text-gray-900"
+              style={{ fontFamily: "'Eurostile', sans-serif" }}
+            >
+              Horizon Gantt
+            </Link>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1 rounded hover:bg-gray-100 text-gray-500"
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        </div>
+      )}
 
       <nav className="flex-1 p-2 space-y-1">
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
               pathname.startsWith(item.href)
@@ -80,11 +87,11 @@ export function Sidebar({
             )}
           >
             <item.icon size={18} />
-            {!collapsed && item.label}
+            {show && item.label}
           </Link>
         ))}
 
-        {!collapsed && organizations.length > 0 && (
+        {show && organizations.length > 0 && (
           <div className="pt-4">
             <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
               Organizations
@@ -93,6 +100,7 @@ export function Sidebar({
               <Link
                 key={org.id}
                 href={`/organizations/${org.id}`}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   pathname === `/organizations/${org.id}`
@@ -109,7 +117,7 @@ export function Sidebar({
       </nav>
 
       <div className="p-2 border-t border-gray-200">
-        {!collapsed && profile && (
+        {show && profile && (
           <div className="px-3 py-2 text-sm text-gray-600 truncate">
             {profile.full_name || profile.email}
           </div>
@@ -119,7 +127,7 @@ export function Sidebar({
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 w-full transition-colors"
         >
           <LogOut size={18} />
-          {!collapsed && "Sign Out"}
+          {show && "Sign Out"}
         </button>
       </div>
     </aside>

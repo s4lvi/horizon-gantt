@@ -86,28 +86,28 @@ export function TimelineControls({
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200" data-print-hide>
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-1 md:gap-0 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 md:px-4 md:py-3 bg-white border-b border-gray-200" data-print-hide>
+      <div className="flex items-center gap-2 pl-11 md:pl-0 mb-1 md:mb-0">
         {canEdit ? (
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleTitleBlur}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-            className="text-lg font-bold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-[var(--brand-navy)] rounded px-1"
+            className="text-base md:text-lg font-bold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-[var(--brand-navy)] rounded px-1 w-full md:w-auto"
           />
         ) : (
-          <h1 className="text-lg font-bold text-gray-900">{chart.title}</h1>
+          <h1 className="text-base md:text-lg font-bold text-gray-900">{chart.title}</h1>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
         <div className="flex bg-gray-100 rounded-lg p-0.5">
           {VIEW_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setViewMode(opt.value)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-2 md:px-3 py-1 md:py-1.5 text-[10px] md:text-xs font-medium rounded-md transition-colors ${
                 viewMode === opt.value
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -120,20 +120,20 @@ export function TimelineControls({
 
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           title="Export as CSV"
         >
           <Download size={16} />
-          Export
+          <span className="hidden sm:inline">Export</span>
         </button>
 
         <button
           onClick={handlePrint}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           title="Print chart"
         >
           <Printer size={16} />
-          Print
+          <span className="hidden sm:inline">Print</span>
         </button>
 
         {isOwner && (
@@ -142,10 +142,10 @@ export function TimelineControls({
               onClick={() => {
                 window.dispatchEvent(new CustomEvent("toggle-share-dialog"));
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Share2 size={16} />
-              Share
+              <span className="hidden sm:inline">Share</span>
             </button>
             <button
               onClick={handleDelete}

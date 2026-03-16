@@ -28,6 +28,15 @@ h1, h2, h3 {
   font-weight: 700;
 }
 
+/* Mobile sidebar drawer */
+.sidebar-drawer-backdrop {
+  transition: opacity 200ms ease;
+}
+
+.sidebar-drawer {
+  transition: transform 200ms ease;
+}
+
 /* Hide scrollbar on gantt timeline for cleaner look */
 .gantt-timeline::-webkit-scrollbar {
   height: 8px;

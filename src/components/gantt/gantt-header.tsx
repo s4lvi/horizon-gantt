@@ -19,32 +19,41 @@ export function GanttHeader({
   const { setColumnWidth } = useGanttStore();
   const groups = getHeaderGroups(columns, viewMode);
 
+  const getClientX = (e: MouseEvent | TouchEvent) => {
+    if ("touches" in e) return e.touches[0]?.clientX ?? 0;
+    return e.clientX;
+  };
+
   const handleResizeStart = useCallback(
-    (e: React.MouseEvent) => {
+    (e: React.MouseEvent | React.TouchEvent) => {
       e.preventDefault();
-      const startX = e.clientX;
+      const startX = "touches" in e ? e.touches[0].clientX : e.clientX;
       const startWidth = columnWidth;
 
-      const handleMouseMove = (moveEvent: MouseEvent) => {
-        const dx = moveEvent.clientX - startX;
-        // Scale the delta by how many columns are in a group (so small drags have visible effect)
-        const avgGroupSpan =
-          groups.length > 0
-            ? groups.reduce((sum, g) => sum + g.span, 0) / groups.length
-            : 1;
+      const avgGroupSpan =
+        groups.length > 0
+          ? groups.reduce((sum, g) => sum + g.span, 0) / groups.length
+          : 1;
+
+      const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+        const dx = getClientX(moveEvent) - startX;
         const newWidth = startWidth + dx / avgGroupSpan;
         setColumnWidth(Math.round(newWidth));
       };
 
-      const handleMouseUp = () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
+      const handleEnd = () => {
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("mouseup", handleEnd);
+        window.removeEventListener("touchmove", handleMove);
+        window.removeEventListener("touchend", handleEnd);
         document.body.style.cursor = "";
       };
 
       document.body.style.cursor = "col-resize";
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("mouseup", handleEnd);
+      window.addEventListener("touchmove", handleMove, { passive: false });
+      window.addEventListener("touchend", handleEnd);
     },
     [columnWidth, groups, setColumnWidth]
   );
@@ -62,9 +71,10 @@ export function GanttHeader({
             {group.label}
             {/* Resize handle on the right edge */}
             <div
-              className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-gray-300/40 z-10"
-              style={{ marginRight: -4 }}
+              className="absolute right-0 top-0 bottom-0 w-4 md:w-2 cursor-col-resize hover:bg-gray-300/40 active:bg-gray-300/60 z-10"
+              style={{ marginRight: -8 }}
               onMouseDown={handleResizeStart}
+              onTouchStart={handleResizeStart}
             />
           </div>
         ))}

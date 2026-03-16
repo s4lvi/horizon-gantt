@@ -3,7 +3,7 @@ import Image from "next/image";
 export function Footer() {
   return (
     <footer
-      className="text-white/70 py-4 px-6 flex items-center justify-center gap-3 text-sm"
+      className="text-white/70 py-3 px-4 md:py-4 md:px-6 flex items-center justify-center gap-3 text-xs md:text-sm"
       style={{ backgroundColor: "#1e3a5f" }}
       data-print-hide
     >

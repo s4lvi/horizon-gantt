@@ -42,9 +42,9 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-6 md:mb-8">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard</h1>
         <CreateChartButton />
       </div>
 
