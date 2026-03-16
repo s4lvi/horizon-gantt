@@ -1,0 +1,129 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { Activity, Chart, Dependency, Profile } from "@/lib/types";
+import { useGanttStore } from "@/lib/stores/gantt-store";
+import { GanttHeader } from "./gantt-header";
+import { GanttGrid } from "./gantt-grid";
+import { GanttBar } from "./gantt-bar";
+import { GanttDependencyLines } from "./gantt-dependency-lines";
+import { ActivitySidebar } from "./activity-sidebar";
+import { TimelineControls } from "./timeline-controls";
+import { ActivityForm } from "./activity-form";
+import { ShareDialog } from "./share-dialog";
+import { getTimelineRange, getColumns, getColumnWidth } from "@/lib/utils/dates";
+import { Toaster } from "sonner";
+
+const ROW_HEIGHT = 44;
+
+export function GanttChart({
+  chart,
+  initialActivities,
+  initialDependencies,
+  canEdit,
+  isOwner,
+  members,
+  currentUserId,
+}: {
+  chart: Chart;
+  initialActivities: Activity[];
+  initialDependencies: Dependency[];
+  canEdit: boolean;
+  isOwner: boolean;
+  members: Profile[];
+  currentUserId: string;
+}) {
+  const {
+    activities,
+    dependencies,
+    viewMode,
+    selectedActivityId,
+    setActivities,
+    setDependencies,
+    setCanEdit,
+  } = useGanttStore();
+
+  const timelineRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setActivities(initialActivities);
+    setDependencies(initialDependencies);
+    setCanEdit(canEdit);
+  }, [initialActivities, initialDependencies, canEdit, setActivities, setDependencies, setCanEdit]);
+
+  const sortedActivities = [...activities].sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+
+  const { start: timelineStart, end: timelineEnd } =
+    getTimelineRange(sortedActivities);
+  const columns = getColumns(timelineStart, timelineEnd, viewMode);
+  const columnWidth = getColumnWidth(viewMode);
+  const totalWidth = columns.length * columnWidth;
+  const totalHeight = sortedActivities.length * ROW_HEIGHT;
+
+  const selectedActivity = selectedActivityId
+    ? activities.find((a) => a.id === selectedActivityId)
+    : null;
+
+  return (
+    <div className="flex flex-col h-full">
+      <Toaster position="bottom-right" />
+      <TimelineControls chart={chart} isOwner={isOwner} canEdit={canEdit} />
+
+      <div className="flex flex-1 overflow-hidden">
+        <ActivitySidebar
+          activities={sortedActivities}
+          chartId={chart.id}
+          members={members}
+          rowHeight={ROW_HEIGHT}
+        />
+
+        <div ref={timelineRef} className="flex-1 overflow-auto relative">
+          <div style={{ width: totalWidth, minHeight: "100%" }}>
+            <GanttHeader
+              columns={columns}
+              columnWidth={columnWidth}
+              viewMode={viewMode}
+            />
+            <div className="relative" style={{ height: totalHeight }}>
+              <GanttGrid
+                columns={columns}
+                columnWidth={columnWidth}
+                height={totalHeight}
+              />
+              {sortedActivities.map((activity, index) => (
+                <GanttBar
+                  key={activity.id}
+                  activity={activity}
+                  index={index}
+                  timelineStart={timelineStart}
+                  columnWidth={columnWidth}
+                  rowHeight={ROW_HEIGHT}
+                  chartId={chart.id}
+                />
+              ))}
+              <GanttDependencyLines
+                activities={sortedActivities}
+                dependencies={dependencies}
+                timelineStart={timelineStart}
+                columnWidth={columnWidth}
+                rowHeight={ROW_HEIGHT}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {selectedActivity && canEdit && (
+        <ActivityForm
+          activity={selectedActivity}
+          members={members}
+          chartId={chart.id}
+        />
+      )}
+
+      <ShareDialog chartId={chart.id} isOwner={isOwner} />
+    </div>
+  );
+}
