@@ -60,7 +60,7 @@ export function ActivityForm({
           <input
             value={activity.title}
             onChange={(e) => handleUpdate({ title: e.target.value })}
-            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
           />
         </div>
 
@@ -74,7 +74,7 @@ export function ActivityForm({
               onChange={(e) =>
                 handleUpdate({ assignee_id: e.target.value || null })
               }
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
             >
               <option value="">Unassigned</option>
               {members.map((m) => (
@@ -96,7 +96,7 @@ export function ActivityForm({
               onChange={(e) =>
                 handleUpdate({ parent_id: e.target.value || null })
               }
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
             >
               <option value="">No group</option>
               {groups.map((g) => (

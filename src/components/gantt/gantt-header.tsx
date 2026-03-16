@@ -41,7 +41,7 @@ export function GanttHeader({
               className={cn(
                 "text-center py-1 border-r border-gray-100 flex-shrink-0 leading-tight",
                 col.isToday
-                  ? "bg-blue-50 text-blue-700 font-bold"
+                  ? "bg-[#e8eef5] text-[var(--brand-navy)] font-bold"
                   : weekend
                     ? "text-gray-400"
                     : "text-gray-500"

@@ -75,7 +75,7 @@ export function Sidebar({
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
               pathname.startsWith(item.href)
-                ? "bg-blue-50 text-blue-700"
+                ? "bg-[#e8eef5] text-[var(--brand-navy)]"
                 : "text-gray-700 hover:bg-gray-100"
             )}
           >
@@ -96,7 +96,7 @@ export function Sidebar({
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   pathname === `/organizations/${org.id}`
-                    ? "bg-blue-50 text-blue-700"
+                    ? "bg-[#e8eef5] text-[var(--brand-navy)]"
                     : "text-gray-700 hover:bg-gray-100"
                 )}
               >

@@ -26,7 +26,7 @@ export default async function OrganizationsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Organizations</h1>
         <Link
           href="/organizations/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-navy)] text-white rounded-lg hover:bg-[var(--brand-navy-light)] transition-colors font-medium text-sm"
         >
           <Plus size={18} />
           New Organization
@@ -78,10 +78,10 @@ export default async function OrganizationsPage() {
             <Link
               key={m.organizations.id}
               href={`/organizations/${m.organizations.id}`}
-              className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all"
+              className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-[var(--brand-navy-light)] hover:shadow-md transition-all"
             >
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Building2 size={20} className="text-blue-600" />
+                <Building2 size={20} className="text-[var(--brand-navy)]" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">

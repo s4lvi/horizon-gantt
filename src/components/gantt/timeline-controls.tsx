@@ -94,7 +94,7 @@ export function TimelineControls({
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleTitleBlur}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-            className="text-lg font-bold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+            className="text-lg font-bold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-[var(--brand-navy)] rounded px-1"
           />
         ) : (
           <h1 className="text-lg font-bold text-gray-900">{chart.title}</h1>

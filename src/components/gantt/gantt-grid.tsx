@@ -17,7 +17,7 @@ export function GanttGrid({
         <div
           key={i}
           className={`absolute top-0 border-r ${
-            col.isToday ? "border-blue-300 bg-blue-50/30" : "border-gray-100"
+            col.isToday ? "border-blue-300 bg-[#e8eef5]/30" : "border-gray-100"
           }`}
           style={{
             left: i * columnWidth,

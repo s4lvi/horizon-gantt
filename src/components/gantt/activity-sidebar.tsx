@@ -124,9 +124,9 @@ function SortableRow({
       className={cn(
         "flex items-center gap-1 border-b border-gray-100 group/row",
         isDragging && "opacity-50 bg-gray-50",
-        isSelected && "bg-blue-50",
+        isSelected && "bg-[#e8eef5]",
         row.isGroup && "bg-gray-50/50",
-        isDropTarget && row.isGroup && "ring-2 ring-inset ring-blue-400 bg-blue-50"
+        isDropTarget && row.isGroup && "ring-2 ring-inset ring-blue-400 bg-[#e8eef5]"
       )}
     >
       <div
@@ -184,7 +184,7 @@ function SortableRow({
               }
             }}
             autoFocus
-            className="flex-1 text-sm bg-transparent outline-none border-b border-blue-400 min-w-0"
+            className="flex-1 text-sm bg-transparent outline-none border-b border-[var(--brand-navy)] min-w-0"
           />
         ) : (
           <span
@@ -208,7 +208,7 @@ function SortableRow({
         {canEdit && row.isGroup && (
           <button
             onClick={handleAddChild}
-            className="opacity-0 group-hover/row:opacity-100 text-gray-300 hover:text-blue-500 transition-opacity"
+            className="opacity-0 group-hover/row:opacity-100 text-gray-300 hover:text-[var(--brand-navy)] transition-opacity"
             title="Add sub-activity"
           >
             <Plus size={14} />
@@ -237,7 +237,7 @@ function UngroupDropZone({ isOver }: { isOver: boolean }) {
       className={cn(
         "flex items-center justify-center gap-2 py-2 mx-2 my-1 rounded-lg border-2 border-dashed text-xs transition-colors",
         isOver
-          ? "border-blue-400 bg-blue-50 text-blue-600"
+          ? "border-[var(--brand-navy)] bg-[#e8eef5] text-[var(--brand-navy)]"
           : "border-gray-200 text-gray-400"
       )}
     >
@@ -449,14 +449,14 @@ export function ActivitySidebar({
           <div className="flex items-center gap-1">
             <button
               onClick={handleAddGroup}
-              className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              className="p-1 text-gray-400 hover:text-[var(--brand-navy)] hover:bg-[#e8eef5] rounded transition-colors"
               title="Add group"
             >
               <FolderClosed size={14} />
             </button>
             <button
               onClick={handleAddActivity}
-              className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              className="p-1 text-gray-400 hover:text-[var(--brand-navy)] hover:bg-[#e8eef5] rounded transition-colors"
               title="Add activity"
             >
               <Plus size={16} />

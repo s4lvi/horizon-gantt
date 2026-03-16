@@ -29,15 +29,15 @@ export default async function AppLayout({
     .eq("user_id", user.id);
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar
-        profile={profile}
-        organizations={orgs?.map((o: any) => o.organizations) || []}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex flex-col h-screen bg-gray-50">
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          profile={profile}
+          organizations={orgs?.map((o: any) => o.organizations) || []}
+        />
         <main className="flex-1 overflow-auto">{children}</main>
-        <Footer />
       </div>
+      <Footer />
     </div>
   );
 }

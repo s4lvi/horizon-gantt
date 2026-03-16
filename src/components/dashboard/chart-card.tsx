@@ -13,11 +13,11 @@ export function ChartCard({
   return (
     <Link
       href={`/charts/${chart.id}`}
-      className="block p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all"
+      className="block p-4 bg-white rounded-lg border border-gray-200 hover:border-[var(--brand-navy-light)] hover:shadow-md transition-all"
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
-          <BarChart3 size={18} className="text-blue-500" />
+          <BarChart3 size={18} className="text-[var(--brand-navy)]" />
           <h3 className="font-semibold text-gray-900 truncate">{chart.title}</h3>
         </div>
         {permission && (

@@ -103,12 +103,12 @@ export function OrgMembers({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Invite by email"
-              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
             />
             <button
               type="submit"
               disabled={loading}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="p-2 bg-[var(--brand-navy)] text-white rounded-lg hover:bg-[var(--brand-navy-light)] disabled:opacity-50 transition-colors"
             >
               <UserPlus size={16} />
             </button>
@@ -137,7 +137,7 @@ export function OrgMembers({
                   <div className="flex items-center gap-1 ml-2">
                     <button
                       onClick={() => handleCopyLink(link.token, link.id)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-[var(--brand-navy)] rounded hover:bg-[#e8eef5] transition-colors"
                     >
                       {copiedId === link.id ? (
                         <Check size={14} className="text-green-500" />

@@ -244,7 +244,7 @@ export function GanttBar({
         isCollapsedGroup
           ? "cursor-default"
           : "cursor-grab active:cursor-grabbing",
-        isSelected && "ring-2 ring-blue-500 ring-offset-1"
+        isSelected && "ring-2 ring-[var(--brand-navy)] ring-offset-1"
       )}
       style={{
         top,
@@ -310,7 +310,7 @@ export function GanttBar({
       {/* Link button — not for groups */}
       {canEdit && !displayRow.isGroup && (
         <button
-          className="absolute -right-7 top-1/2 -translate-y-1/2 w-5 h-5 bg-white border border-gray-300 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-blue-50 hover:border-blue-400 transition-all shadow-sm z-10"
+          className="absolute -right-7 top-1/2 -translate-y-1/2 w-5 h-5 bg-white border border-gray-300 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[#e8eef5] hover:border-[var(--brand-navy)] transition-all shadow-sm z-10"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();

@@ -34,13 +34,13 @@ export default function NewOrganizationPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="My Team"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
           />
         </div>
         <button
           type="submit"
           disabled={loading || !name.trim()}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+          className="w-full px-4 py-2 bg-[var(--brand-navy)] text-white rounded-lg hover:bg-[var(--brand-navy-light)] transition-colors font-medium disabled:opacity-50"
         >
           {loading ? "Creating..." : "Create Organization"}
         </button>

@@ -123,14 +123,14 @@ export function ShareDialog({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email address"
-              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
             />
             <select
               value={permission}
               onChange={(e) =>
                 setPermission(e.target.value as SharePermission)
               }
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
             >
               <option value="view">View</option>
               <option value="edit">Edit</option>
@@ -138,7 +138,7 @@ export function ShareDialog({
             <button
               type="submit"
               disabled={loading}
-              className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="px-3 py-2 bg-[var(--brand-navy)] text-white text-sm font-medium rounded-lg hover:bg-[var(--brand-navy-light)] disabled:opacity-50 transition-colors"
             >
               <UserPlus size={16} />
             </button>
@@ -156,7 +156,7 @@ export function ShareDialog({
               onChange={(e) =>
                 setLinkPermission(e.target.value as SharePermission)
               }
-              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
             >
               <option value="view">Anyone with link can view</option>
               <option value="edit">Anyone with link can edit</option>
@@ -188,7 +188,7 @@ export function ShareDialog({
                   <div className="flex items-center gap-1 ml-2">
                     <button
                       onClick={() => handleCopyLink(link.token, link.id)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-[var(--brand-navy)] rounded hover:bg-[#e8eef5] transition-colors"
                     >
                       {copiedId === link.id ? (
                         <Check size={14} className="text-green-500" />

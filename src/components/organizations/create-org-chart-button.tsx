@@ -20,7 +20,7 @@ export function CreateOrgChartButton({ orgId }: { orgId: string }) {
     <button
       onClick={handleCreate}
       disabled={loading}
-      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50"
+      className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-navy)] text-white rounded-lg hover:bg-[var(--brand-navy-light)] transition-colors font-medium text-sm disabled:opacity-50"
     >
       <Plus size={18} />
       {loading ? "Creating..." : "New Chart"}
