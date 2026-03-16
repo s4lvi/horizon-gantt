@@ -39,7 +39,7 @@ export function ActivityForm({
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white px-4 py-3">
+    <div className="border-t border-gray-200 bg-white px-4 py-3" data-print-hide>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-700">
           {activity.is_group ? "Group Details" : "Activity Details"}

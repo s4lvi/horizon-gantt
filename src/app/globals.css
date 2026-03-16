@@ -35,3 +35,64 @@ body {
 .gantt-timeline::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Print styles */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0.5cm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide app sidebar navigation, controls, and form panel */
+  aside:not(.print-chart-area *),
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /* Show the print title */
+  .print-title {
+    display: block !important;
+  }
+
+  /* Reset layout constraints */
+  main {
+    overflow: visible !important;
+  }
+
+  main > div {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Scale the chart area (sidebar + timeline) to fit page width */
+  .print-chart-area {
+    overflow: visible !important;
+    height: auto !important;
+    width: var(--print-total-width) !important;
+    transform-origin: top left;
+    /* scale to fit ~267mm (A4 landscape minus margins) */
+    scale: calc(267mm / var(--print-total-width));
+  }
+
+  /* Show the activity sidebar in print */
+  .print-chart-area > div:first-child {
+    display: flex !important;
+    overflow: visible !important;
+  }
+
+  /* Let the timeline content overflow */
+  .overflow-auto,
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+
+  /* Remove sticky positioning */
+  .sticky {
+    position: relative !important;
+  }
+}

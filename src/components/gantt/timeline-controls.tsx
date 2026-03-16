@@ -3,7 +3,7 @@
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { ViewMode, Chart } from "@/lib/types";
 import { updateChart, deleteChart } from "@/lib/actions/chart-actions";
-import { Share2, Trash2 } from "lucide-react";
+import { Share2, Trash2, Printer, Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -22,9 +22,8 @@ export function TimelineControls({
   isOwner: boolean;
   canEdit: boolean;
 }) {
-  const { viewMode, setViewMode } = useGanttStore();
+  const { viewMode, setViewMode, activities } = useGanttStore();
   const [title, setTitle] = useState(chart.title);
-  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const handleTitleBlur = async () => {
     if (title !== chart.title && canEdit) {
@@ -45,8 +44,49 @@ export function TimelineControls({
     }
   };
 
+  const handleExportCSV = () => {
+    const sorted = [...activities].sort(
+      (a, b) => a.sort_order - b.sort_order
+    );
+
+    const rows = [
+      ["Title", "Start Date", "End Date", "Color", "Group", "Assignee"],
+    ];
+    for (const a of sorted) {
+      const parent = a.parent_id
+        ? activities.find((p) => p.id === a.parent_id)?.title || ""
+        : "";
+      rows.push([
+        a.title,
+        a.start_date || "",
+        a.end_date || "",
+        a.color,
+        parent,
+        a.profiles?.full_name || a.profiles?.email || "",
+      ]);
+    }
+
+    const csv = rows
+      .map((r) =>
+        r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")
+      )
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${title.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported");
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+    <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200" data-print-hide>
       <div className="flex items-center gap-4">
         {canEdit ? (
           <input
@@ -77,6 +117,24 @@ export function TimelineControls({
             </button>
           ))}
         </div>
+
+        <button
+          onClick={handleExportCSV}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Export as CSV"
+        >
+          <Download size={16} />
+          Export
+        </button>
+
+        <button
+          onClick={handlePrint}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Print chart"
+        >
+          <Printer size={16} />
+          Print
+        </button>
 
         {isOwner && (
           <>

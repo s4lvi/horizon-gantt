@@ -67,12 +67,21 @@ export function GanttChart({
     ? activities.find((a) => a.id === selectedActivityId)
     : null;
 
+  // Sidebar width for print layout
+  const sidebarWidth = 240;
+  const printTotalWidth = sidebarWidth + totalWidth;
+
   return (
     <div className="flex flex-col h-full">
       <Toaster position="bottom-right" />
       <TimelineControls chart={chart} isOwner={isOwner} canEdit={canEdit} />
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* Print-only title */}
+      <div className="hidden print-title px-4 py-3 border-b border-gray-200">
+        <h1 className="text-lg font-bold text-gray-900">{chart.title}</h1>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden print-chart-area" style={{ ["--print-total-width" as string]: `${printTotalWidth}px` }}>
         <ActivitySidebar
           displayRows={displayRows}
           chartId={chart.id}
