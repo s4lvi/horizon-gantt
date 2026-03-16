@@ -30,13 +30,13 @@ export default async function LandingPage() {
       <main className="flex-1 max-w-6xl mx-auto px-4 py-20 w-full">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900 mb-4">
-            Project planning,
+            See the big picture.
             <br />
-            <span style={{ color: "#C11616" }}>made visual.</span>
+            <span style={{ color: "#C11616" }}>Ship on time.</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Plan, schedule, and collaborate with interactive Gantt charts.
-            Drag-and-drop timelines with dependency management built in.
+            Horizon Gantt gives your team a shared timeline to plan work,
+            track dependencies, and stay aligned from kickoff to delivery.
           </p>
           <Link
             href="/login"
@@ -51,23 +51,23 @@ export default async function LandingPage() {
           {[
             {
               icon: BarChart3,
-              title: "Visual Planning",
-              desc: "Drag and drop activities on an interactive timeline with multiple view modes.",
+              title: "Interactive Timelines",
+              desc: "Drag, resize, and rearrange activities across day, week, or month views.",
             },
             {
               icon: Users,
-              title: "Team Collaboration",
-              desc: "Create organizations, invite members, and assign work to your team.",
+              title: "Built for Teams",
+              desc: "Create organizations, invite members, and assign ownership to every task.",
             },
             {
               icon: Share2,
-              title: "Flexible Sharing",
-              desc: "Share charts with view or edit permissions. Everyone stays in sync.",
+              title: "Share Instantly",
+              desc: "Send a link or invite by email with view-only or full edit access.",
             },
             {
               icon: Calendar,
-              title: "Dependencies",
-              desc: "Link activities together. Moving one automatically adjusts its dependents.",
+              title: "Smart Dependencies",
+              desc: "Link tasks so deadlines cascade automatically when plans change.",
             },
           ].map((feature) => (
             <div
