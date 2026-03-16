@@ -5,6 +5,7 @@ interface GanttStore {
   activities: Activity[];
   dependencies: Dependency[];
   viewMode: ViewMode;
+  columnWidth: number;
   dragState: DragState;
   linkState: LinkState;
   selectedActivityId: string | null;
@@ -14,6 +15,7 @@ interface GanttStore {
   setActivities: (activities: Activity[]) => void;
   setDependencies: (dependencies: Dependency[]) => void;
   setViewMode: (mode: ViewMode) => void;
+  setColumnWidth: (width: number) => void;
   setDragState: (state: DragState) => void;
   setLinkState: (state: LinkState) => void;
   setSelectedActivityId: (id: string | null) => void;
@@ -34,6 +36,7 @@ export const useGanttStore = create<GanttStore>((set) => ({
   activities: [],
   dependencies: [],
   viewMode: "months-days",
+  columnWidth: 32,
   dragState: null,
   linkState: null,
   selectedActivityId: null,
@@ -43,6 +46,7 @@ export const useGanttStore = create<GanttStore>((set) => ({
   setActivities: (activities) => set({ activities }),
   setDependencies: (dependencies) => set({ dependencies }),
   setViewMode: (viewMode) => set({ viewMode }),
+  setColumnWidth: (columnWidth) => set({ columnWidth: Math.max(16, Math.min(120, columnWidth)) }),
   setDragState: (dragState) => set({ dragState }),
   setLinkState: (linkState) => set({ linkState }),
   setSelectedActivityId: (selectedActivityId) => set({ selectedActivityId }),

@@ -252,11 +252,15 @@ export function ActivitySidebar({
   chartId,
   members,
   rowHeight,
+  scrollRef,
+  onScroll,
 }: {
   displayRows: DisplayRow[];
   chartId: string;
   members: Profile[];
   rowHeight: number;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
+  onScroll?: () => void;
 }) {
   const { canEdit, activities } = useGanttStore();
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -465,7 +469,7 @@ export function ActivitySidebar({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={scrollRef} onScroll={onScroll}>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}

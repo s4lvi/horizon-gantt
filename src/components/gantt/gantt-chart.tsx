@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { Activity, Chart, Dependency, Profile } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { GanttHeader } from "./gantt-header";
@@ -38,14 +38,18 @@ export function GanttChart({
     activities,
     dependencies,
     viewMode,
+    columnWidth,
     selectedActivityId,
     collapsedGroupIds,
     setActivities,
     setDependencies,
     setCanEdit,
+    setColumnWidth,
   } = useGanttStore();
 
   const timelineRef = useRef<HTMLDivElement>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
+  const isSyncing = useRef(false);
 
   useEffect(() => {
     setActivities(initialActivities);
@@ -53,13 +57,40 @@ export function GanttChart({
     setCanEdit(canEdit);
   }, [initialActivities, initialDependencies, canEdit, setActivities, setDependencies, setCanEdit]);
 
+  // Reset column width when view mode changes
+  useEffect(() => {
+    setColumnWidth(getColumnWidth(viewMode));
+  }, [viewMode, setColumnWidth]);
+
+  // Sync vertical scroll between sidebar and timeline
+  const handleTimelineScroll = useCallback(() => {
+    if (isSyncing.current) return;
+    isSyncing.current = true;
+    if (timelineRef.current && sidebarScrollRef.current) {
+      sidebarScrollRef.current.scrollTop = timelineRef.current.scrollTop;
+    }
+    requestAnimationFrame(() => {
+      isSyncing.current = false;
+    });
+  }, []);
+
+  const handleSidebarScroll = useCallback(() => {
+    if (isSyncing.current) return;
+    isSyncing.current = true;
+    if (timelineRef.current && sidebarScrollRef.current) {
+      timelineRef.current.scrollTop = sidebarScrollRef.current.scrollTop;
+    }
+    requestAnimationFrame(() => {
+      isSyncing.current = false;
+    });
+  }, []);
+
   const displayRows = buildDisplayRows(activities, collapsedGroupIds);
 
   // Use ALL activities for timeline range (not just visible rows)
   const { start: timelineStart, end: timelineEnd } =
     getTimelineRange(activities);
   const columns = getColumns(timelineStart, timelineEnd, viewMode);
-  const columnWidth = getColumnWidth(viewMode);
   const totalWidth = columns.length * columnWidth;
   const totalHeight = displayRows.length * ROW_HEIGHT;
 
@@ -87,9 +118,15 @@ export function GanttChart({
           chartId={chart.id}
           members={members}
           rowHeight={ROW_HEIGHT}
+          scrollRef={sidebarScrollRef}
+          onScroll={handleSidebarScroll}
         />
 
-        <div ref={timelineRef} className="flex-1 overflow-auto relative">
+        <div
+          ref={timelineRef}
+          className="flex-1 overflow-auto relative"
+          onScroll={handleTimelineScroll}
+        >
           <div style={{ width: totalWidth, minHeight: "100%" }}>
             <GanttHeader
               columns={columns}
