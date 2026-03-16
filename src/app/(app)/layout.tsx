@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
+import { Footer } from "@/components/layout/footer";
 
 export default async function AppLayout({
   children,
@@ -33,7 +34,10 @@ export default async function AppLayout({
         profile={profile}
         organizations={orgs?.map((o: any) => o.organizations) || []}
       />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 overflow-auto">{children}</main>
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { BarChart3, Users, Share2, Calendar } from "lucide-react";
+import { Footer } from "@/components/layout/footer";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -80,6 +81,7 @@ export default async function LandingPage() {
           ))}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
