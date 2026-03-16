@@ -1,28 +1,30 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { CreateChartButton } from "@/components/dashboard/create-chart-button";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const admin = createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   // My charts
-  const { data: myCharts } = await supabase
+  const { data: myCharts } = await admin
     .from("charts")
     .select("*, profiles(*), organizations(name)")
     .eq("owner_id", user!.id)
     .order("updated_at", { ascending: false });
 
   // Shared with me
-  const { data: sharedCharts } = await supabase
+  const { data: sharedCharts } = await admin
     .from("chart_shares")
     .select("permission, charts(*, profiles(*), organizations(name))")
     .eq("user_id", user!.id);
 
   // Org charts (not owned by me)
-  const { data: orgMemberships } = await supabase
+  const { data: orgMemberships } = await admin
     .from("organization_members")
     .select("organization_id")
     .eq("user_id", user!.id);
@@ -30,7 +32,7 @@ export default async function DashboardPage() {
   const orgIds = orgMemberships?.map((m: any) => m.organization_id) || [];
   let orgCharts: any[] = [];
   if (orgIds.length > 0) {
-    const { data } = await supabase
+    const { data } = await admin
       .from("charts")
       .select("*, profiles(*), organizations(name)")
       .in("organization_id", orgIds)

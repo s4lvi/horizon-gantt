@@ -6,7 +6,7 @@ export async function updateSession(request: NextRequest) {
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
@@ -25,13 +25,17 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very
+  // hard to debug issues with users being randomly logged out.
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const isAuthPage =
     request.nextUrl.pathname === "/login" ||
-    request.nextUrl.pathname === "/callback";
+    request.nextUrl.pathname.startsWith("/callback");
   const isPublicPage = request.nextUrl.pathname === "/";
 
   if (!user && !isAuthPage && !isPublicPage) {

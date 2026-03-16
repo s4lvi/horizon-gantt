@@ -1,21 +1,28 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function createActivity(chartId: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
-  const { data: existing } = await supabase
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
     .from("activities")
     .select("sort_order")
     .eq("chart_id", chartId)
     .order("sort_order", { ascending: false })
     .limit(1);
 
-  const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+  const nextOrder =
+    existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("activities")
     .insert({
       chart_id: chartId,
@@ -41,7 +48,13 @@ export async function updateActivity(
   }
 ) {
   const supabase = await createClient();
-  const { error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("activities")
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("id", activityId);
@@ -51,7 +64,13 @@ export async function updateActivity(
 
 export async function deleteActivity(activityId: string) {
   const supabase = await createClient();
-  const { error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("activities")
     .delete()
     .eq("id", activityId);
@@ -59,12 +78,23 @@ export async function deleteActivity(activityId: string) {
 }
 
 export async function bulkUpdateActivities(
-  updates: { id: string; start_date?: string; end_date?: string; sort_order?: number }[]
+  updates: {
+    id: string;
+    start_date?: string;
+    end_date?: string;
+    sort_order?: number;
+  }[]
 ) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const admin = createAdminClient();
   for (const update of updates) {
     const { id, ...fields } = update;
-    const { error } = await supabase
+    const { error } = await admin
       .from("activities")
       .update({ ...fields, updated_at: new Date().toISOString() })
       .eq("id", id);

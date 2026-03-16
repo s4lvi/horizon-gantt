@@ -102,6 +102,10 @@ export function GanttBar({
       return;
     }
 
+    // Capture initial scroll position to account for scroll during drag
+    const scrollContainer = barRef.current?.closest(".overflow-auto");
+    const initialScrollLeft = scrollContainer?.scrollLeft ?? 0;
+
     setDragState({
       activityId: activity.id,
       type,
@@ -111,7 +115,9 @@ export function GanttBar({
     });
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const dx = moveEvent.clientX - e.clientX;
+      const currentScrollLeft = scrollContainer?.scrollLeft ?? 0;
+      const scrollDelta = currentScrollLeft - initialScrollLeft;
+      const dx = moveEvent.clientX - e.clientX + scrollDelta;
       const dayDelta = Math.round(dx / columnWidth);
       if (dayDelta === 0) return;
 
@@ -202,12 +208,13 @@ export function GanttBar({
       onClick={(e) => {
         e.stopPropagation();
         if (linkState) {
-          // Complete linking
-          const fromId = linkState.fromActivityId;
-          if (fromId !== activity.id) {
+          // Complete linking: first-clicked is the successor (dependent),
+          // second-clicked is the predecessor (dependency)
+          const successorId = linkState.fromActivityId;
+          if (successorId !== activity.id) {
             window.dispatchEvent(
               new CustomEvent("complete-link", {
-                detail: { fromId, toId: activity.id },
+                detail: { fromId: activity.id, toId: successorId },
               })
             );
           }
@@ -240,17 +247,18 @@ export function GanttBar({
         {activity.title}
       </span>
 
-      {/* Link button */}
+      {/* Link button - positioned fully outside the bar to not interfere with resize */}
       {canEdit && (
         <button
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-blue-50 hover:border-blue-400 transition-all shadow-sm z-10"
+          className="absolute -right-7 top-1/2 -translate-y-1/2 w-5 h-5 bg-white border border-gray-300 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-blue-50 hover:border-blue-400 transition-all shadow-sm z-10"
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             setLinkState({ fromActivityId: activity.id });
-            toast.info("Click another activity to create a dependency");
+            toast.info("Click the activity this depends on");
           }}
         >
-          <Link2 size={12} className="text-gray-600" />
+          <Link2 size={10} className="text-gray-600" />
         </button>
       )}
     </div>

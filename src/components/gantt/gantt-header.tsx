@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils/cn";
 import { ColumnInfo, getHeaderGroups } from "@/lib/utils/dates";
 import { ViewMode } from "@/lib/types";
+import { format, isWeekend } from "date-fns";
 
 export function GanttHeader({
   columns,
@@ -31,20 +32,31 @@ export function GanttHeader({
       </div>
       {/* Bottom row: individual columns */}
       <div className="flex">
-        {columns.map((col, i) => (
-          <div
-            key={i}
-            className={cn(
-              "text-xs text-center py-1 border-r border-gray-100 flex-shrink-0",
-              col.isToday
-                ? "bg-blue-50 text-blue-700 font-bold"
-                : "text-gray-500"
-            )}
-            style={{ width: columnWidth }}
-          >
-            {col.label}
-          </div>
-        ))}
+        {columns.map((col, i) => {
+          const showDow = viewMode !== "months-weeks";
+          const weekend = showDow && isWeekend(col.date);
+          return (
+            <div
+              key={i}
+              className={cn(
+                "text-center py-1 border-r border-gray-100 flex-shrink-0 leading-tight",
+                col.isToday
+                  ? "bg-blue-50 text-blue-700 font-bold"
+                  : weekend
+                    ? "text-gray-400"
+                    : "text-gray-500"
+              )}
+              style={{ width: columnWidth }}
+            >
+              {showDow && (
+                <div className="text-[9px] uppercase tracking-wide">
+                  {format(col.date, "EEE").charAt(0)}
+                </div>
+              )}
+              <div className="text-xs">{col.label}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

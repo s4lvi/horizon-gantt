@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import { GanttChart } from "@/components/gantt/gantt-chart";
 
@@ -9,12 +10,13 @@ export default async function ChartPage({
 }) {
   const { chartId } = await params;
   const supabase = await createClient();
+  const admin = createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: chart } = await supabase
+  const { data: chart } = await admin
     .from("charts")
     .select("*")
     .eq("id", chartId)
@@ -22,13 +24,13 @@ export default async function ChartPage({
 
   if (!chart) notFound();
 
-  const { data: activities } = await supabase
+  const { data: activities } = await admin
     .from("activities")
     .select("*, profiles(*)")
     .eq("chart_id", chartId)
     .order("sort_order", { ascending: true });
 
-  const { data: dependencies } = await supabase
+  const { data: dependencies } = await admin
     .from("dependencies")
     .select("*")
     .eq("chart_id", chartId);
@@ -38,7 +40,7 @@ export default async function ChartPage({
   let canEdit = isOwner;
 
   if (!canEdit) {
-    const { data: share } = await supabase
+    const { data: share } = await admin
       .from("chart_shares")
       .select("permission")
       .eq("chart_id", chartId)
@@ -49,7 +51,7 @@ export default async function ChartPage({
   }
 
   if (!canEdit && chart.organization_id) {
-    const { data: membership } = await supabase
+    const { data: membership } = await admin
       .from("organization_members")
       .select("id")
       .eq("organization_id", chart.organization_id)
@@ -62,7 +64,7 @@ export default async function ChartPage({
   // Get org members for assignee dropdown
   let members: any[] = [];
   if (chart.organization_id) {
-    const { data } = await supabase
+    const { data } = await admin
       .from("organization_members")
       .select("user_id, profiles(id, email, full_name, avatar_url)")
       .eq("organization_id", chart.organization_id);
@@ -70,7 +72,7 @@ export default async function ChartPage({
   }
 
   // Also get chart shares for assignee options
-  const { data: shares } = await supabase
+  const { data: shares } = await admin
     .from("chart_shares")
     .select("user_id, profiles(id, email, full_name, avatar_url)")
     .eq("chart_id", chartId);
@@ -78,7 +80,7 @@ export default async function ChartPage({
   const shareMembers = shares?.map((s: any) => s.profiles) || [];
 
   // Get owner profile
-  const { data: ownerProfile } = await supabase
+  const { data: ownerProfile } = await admin
     .from("profiles")
     .select("*")
     .eq("id", chart.owner_id)

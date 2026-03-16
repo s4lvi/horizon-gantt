@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -15,19 +16,20 @@ export async function GET(request: Request) {
         data: { user },
       } = await supabase.auth.getUser();
       if (user?.email) {
-        const { data: invites } = await supabase
+        const admin = createAdminClient();
+        const { data: invites } = await admin
           .from("organization_invites")
           .select("id, organization_id")
           .eq("email", user.email);
 
         if (invites && invites.length > 0) {
           for (const invite of invites) {
-            await supabase.from("organization_members").insert({
+            await admin.from("organization_members").insert({
               organization_id: invite.organization_id,
               user_id: user.id,
               role: "member",
             });
-            await supabase
+            await admin
               .from("organization_invites")
               .delete()
               .eq("id", invite.id);

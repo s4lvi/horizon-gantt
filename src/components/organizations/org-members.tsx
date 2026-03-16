@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { inviteMember, removeMember } from "@/lib/actions/org-actions";
-import { UserPlus, Trash2, Clock, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  inviteMember,
+  removeMember,
+  createOrgInviteLink,
+  getOrgInviteLinks,
+  deleteOrgInviteLink,
+} from "@/lib/actions/org-actions";
+import { UserPlus, Trash2, Clock, Users, Link, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export function OrgMembers({
@@ -20,6 +26,14 @@ export function OrgMembers({
 }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [inviteLinks, setInviteLinks] = useState<any[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAdmin) {
+      getOrgInviteLinks(orgId).then(setInviteLinks).catch(() => {});
+    }
+  }, [orgId, isAdmin]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +47,34 @@ export function OrgMembers({
       toast.error(err.message || "Failed to invite member");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateLink = async () => {
+    try {
+      const link = await createOrgInviteLink(orgId);
+      setInviteLinks((prev) => [link, ...prev]);
+      toast.success("Invite link created");
+    } catch {
+      toast.error("Failed to create invite link");
+    }
+  };
+
+  const handleCopyLink = (token: string, linkId: string) => {
+    const url = `${window.location.origin}/invite/org/${token}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(linkId);
+    toast.success("Link copied to clipboard");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleDeleteLink = async (linkId: string) => {
+    try {
+      await deleteOrgInviteLink(linkId, orgId);
+      setInviteLinks((prev) => prev.filter((l) => l.id !== linkId));
+      toast.success("Link removed");
+    } catch {
+      toast.error("Failed to remove link");
     }
   };
 
@@ -54,22 +96,67 @@ export function OrgMembers({
       </h2>
 
       {isAdmin && (
-        <form onSubmit={handleInvite} className="flex gap-2 mb-4">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Invite by email"
-            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            <UserPlus size={16} />
-          </button>
-        </form>
+        <div className="space-y-3 mb-4">
+          <form onSubmit={handleInvite} className="flex gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Invite by email"
+              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              <UserPlus size={16} />
+            </button>
+          </form>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCreateLink}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Link size={14} />
+              Create invite link
+            </button>
+          </div>
+
+          {inviteLinks.length > 0 && (
+            <div className="space-y-2">
+              {inviteLinks.map((link: any) => (
+                <div
+                  key={link.id}
+                  className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg border border-gray-100"
+                >
+                  <p className="text-xs text-gray-500 truncate font-mono flex-1 min-w-0">
+                    /invite/org/{link.token.slice(0, 12)}...
+                  </p>
+                  <div className="flex items-center gap-1 ml-2">
+                    <button
+                      onClick={() => handleCopyLink(link.token, link.id)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50 transition-colors"
+                    >
+                      {copiedId === link.id ? (
+                        <Check size={14} className="text-green-500" />
+                      ) : (
+                        <Copy size={14} />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteLink(link.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 rounded hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       <div className="space-y-2">

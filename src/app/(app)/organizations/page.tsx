@@ -1,19 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { Building2, Plus } from "lucide-react";
 
 export default async function OrganizationsPage() {
   const supabase = await createClient();
+  const admin = createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: memberships } = await supabase
+  const { data: memberships } = await admin
     .from("organization_members")
     .select("role, organizations(id, name, created_at)")
     .eq("user_id", user!.id);
 
-  const { data: invites } = await supabase
+  const { data: invites } = await admin
     .from("organization_invites")
     .select("id, organization_id, organizations(name)")
     .eq("email", user!.email!);

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { OrgMembers } from "@/components/organizations/org-members";
@@ -11,11 +12,12 @@ export default async function OrgPage({
 }) {
   const { orgId } = await params;
   const supabase = await createClient();
+  const admin = createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: org } = await supabase
+  const { data: org } = await admin
     .from("organizations")
     .select("*")
     .eq("id", orgId)
@@ -23,7 +25,7 @@ export default async function OrgPage({
 
   if (!org) notFound();
 
-  const { data: membership } = await supabase
+  const { data: membership } = await admin
     .from("organization_members")
     .select("role")
     .eq("organization_id", orgId)
@@ -33,18 +35,18 @@ export default async function OrgPage({
   const isAdmin =
     membership?.role === "owner" || membership?.role === "admin";
 
-  const { data: charts } = await supabase
+  const { data: charts } = await admin
     .from("charts")
     .select("*, profiles(*)")
     .eq("organization_id", orgId)
     .order("updated_at", { ascending: false });
 
-  const { data: members } = await supabase
+  const { data: members } = await admin
     .from("organization_members")
     .select("*, profiles(*)")
     .eq("organization_id", orgId);
 
-  const { data: invites } = await supabase
+  const { data: invites } = await admin
     .from("organization_invites")
     .select("*")
     .eq("organization_id", orgId);
