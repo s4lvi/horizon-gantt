@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { CreateChartButton } from "@/components/dashboard/create-chart-button";
+import { DeletedProjects } from "@/components/dashboard/deleted-projects";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -10,20 +11,22 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // My charts
+  // My charts (not deleted)
   const { data: myCharts } = await admin
     .from("charts")
     .select("*, profiles(*), organizations(name)")
     .eq("owner_id", user!.id)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
-  // Shared with me
+  // Shared with me (not deleted)
   const { data: sharedCharts } = await admin
     .from("chart_shares")
-    .select("permission, charts(*, profiles(*), organizations(name))")
-    .eq("user_id", user!.id);
+    .select("permission, charts!inner(*, profiles(*), organizations(name))")
+    .eq("user_id", user!.id)
+    .is("charts.deleted_at", null);
 
-  // Org charts (not owned by me)
+  // Org charts (not owned by me, not deleted)
   const { data: orgMemberships } = await admin
     .from("organization_members")
     .select("organization_id")
@@ -37,9 +40,18 @@ export default async function DashboardPage() {
       .select("*, profiles(*), organizations(name)")
       .in("organization_id", orgIds)
       .neq("owner_id", user!.id)
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false });
     orgCharts = data || [];
   }
+
+  // Deleted charts (mine only)
+  const { data: deletedCharts } = await admin
+    .from("charts")
+    .select("*, profiles(*), organizations(name)")
+    .eq("owner_id", user!.id)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -81,7 +93,7 @@ export default async function DashboardPage() {
       )}
 
       {orgCharts.length > 0 && (
-        <section>
+        <section className="mb-10">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">
             Organization Projects
           </h2>
@@ -91,6 +103,10 @@ export default async function DashboardPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {deletedCharts && deletedCharts.length > 0 && (
+        <DeletedProjects charts={deletedCharts} />
       )}
     </div>
   );

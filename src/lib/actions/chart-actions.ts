@@ -54,7 +54,6 @@ export async function deleteChart(chartId: string) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Verify ownership
   const admin = createAdminClient();
   const { data: chart } = await admin
     .from("charts")
@@ -64,8 +63,30 @@ export async function deleteChart(chartId: string) {
 
   if (chart?.owner_id !== user.id) throw new Error("Not authorized");
 
-  const { error } = await admin.from("charts").delete().eq("id", chartId);
+  // Soft delete — set deleted_at timestamp
+  const { error } = await admin
+    .from("charts")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", chartId);
+
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
   redirect("/dashboard");
+}
+
+export async function restoreChart(chartId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("charts")
+    .update({ deleted_at: null })
+    .eq("id", chartId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
 }

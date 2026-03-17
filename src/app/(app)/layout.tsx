@@ -25,7 +25,7 @@ export default async function AppLayout({
 
   const { data: orgs } = await admin
     .from("organization_members")
-    .select("organization_id, organizations(id, name)")
+    .select("organization_id, organizations(id, name, logo_url)")
     .eq("user_id", user.id);
 
   return (

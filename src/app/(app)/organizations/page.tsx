@@ -12,7 +12,7 @@ export default async function OrganizationsPage() {
 
   const { data: memberships } = await admin
     .from("organization_members")
-    .select("role, organizations(id, name, created_at)")
+    .select("role, organizations(id, name, logo_url, created_at)")
     .eq("user_id", user!.id);
 
   const { data: invites } = await admin
@@ -80,9 +80,13 @@ export default async function OrganizationsPage() {
               href={`/organizations/${m.organizations.id}`}
               className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-[var(--brand-navy-light)] hover:shadow-md transition-all"
             >
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Building2 size={20} className="text-[var(--brand-navy)]" />
-              </div>
+              {m.organizations.logo_url ? (
+                <img src={m.organizations.logo_url} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200" />
+              ) : (
+                <div className="w-10 h-10 bg-[#e8eef5] rounded-lg flex items-center justify-center">
+                  <Building2 size={20} className="text-[var(--brand-navy)]" />
+                </div>
+              )}
               <div>
                 <h3 className="font-semibold text-gray-900">
                   {m.organizations.name}

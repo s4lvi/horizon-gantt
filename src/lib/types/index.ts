@@ -45,6 +45,7 @@ export type Chart = {
   organization_id: string | null;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
   profiles?: Profile;
   organizations?: Organization;
   chart_shares?: ChartShare[];

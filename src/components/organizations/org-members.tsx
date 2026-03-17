@@ -9,7 +9,7 @@ import {
   deleteOrgInviteLink,
   updateOrganization,
 } from "@/lib/actions/org-actions";
-import { UserPlus, Trash2, Clock, Users, Link, Copy, Check } from "lucide-react";
+import { UserPlus, Trash2, Clock, Users, Link, Copy, Check, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function OrgMembers({
@@ -93,6 +93,8 @@ export function OrgMembers({
 
   const [orgDesc, setOrgDesc] = useState(org?.description || "");
   const [orgLocation, setOrgLocation] = useState(org?.location || "");
+  const [orgLogo, setOrgLogo] = useState(org?.logo_url || "");
+  const [uploading, setUploading] = useState(false);
 
   const handleOrgSave = async () => {
     try {
@@ -106,6 +108,38 @@ export function OrgMembers({
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("orgId", orgId);
+
+      const res = await fetch("/api/upload-logo", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      setOrgLogo(result.url);
+      toast.success("Logo uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload logo");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div>
       {/* Org settings */}
@@ -113,17 +147,45 @@ export function OrgMembers({
         <div className="mb-6 pb-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Settings</h2>
           <div className="space-y-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Logo</label>
+              <div className="flex items-center gap-3">
+                {orgLogo ? (
+                  <img
+                    src={orgLogo}
+                    alt="Logo"
+                    className="w-10 h-10 rounded-lg object-cover border border-gray-200"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400">
+                    <Building2 size={18} />
+                  </div>
+                )}
+                <label className={`cursor-pointer px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 transition-colors ${
+                  uploading ? "text-gray-400 bg-gray-50" : "text-gray-700 hover:bg-gray-50"
+                }`}>
+                  {uploading ? "Uploading..." : "Upload"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
             <input
               value={orgLocation}
               onChange={(e) => setOrgLocation(e.target.value)}
-              onBlur={handleOrgSave}
+              onBlur={() => handleOrgSave()}
               placeholder="Location"
               className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
             />
             <textarea
               value={orgDesc}
               onChange={(e) => setOrgDesc(e.target.value)}
-              onBlur={handleOrgSave}
+              onBlur={() => handleOrgSave()}
               placeholder="Organization description"
               rows={2}
               className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none resize-none"

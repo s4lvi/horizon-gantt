@@ -6,6 +6,7 @@ import { updateChart, deleteChart } from "@/lib/actions/chart-actions";
 import { Share2, Trash2, Printer, Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
   { value: "months-days", label: "Months / Days" },
@@ -37,28 +38,13 @@ export function TimelineControls({
     }
   };
 
-  const [deleteStep, setDeleteStep] = useState(0);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleDelete = async () => {
-    if (deleteStep === 0) {
-      setDeleteStep(1);
-      toast.warning("Click delete again to confirm", { duration: 3000 });
-      setTimeout(() => setDeleteStep(0), 5000);
-      return;
-    }
-    if (deleteStep === 1) {
-      setDeleteStep(2);
-      toast.warning(`Final warning: "${title}" and all activities will be permanently deleted.`, { duration: 5000 });
-      setTimeout(() => setDeleteStep(0), 5000);
-      return;
-    }
-    if (deleteStep === 2) {
-      try {
-        await deleteChart(chart.id);
-      } catch {
-        toast.error("Failed to delete project");
-        setDeleteStep(0);
-      }
+    try {
+      await deleteChart(chart.id);
+    } catch {
+      toast.error("Failed to delete project");
     }
   };
 
@@ -167,18 +153,27 @@ export function TimelineControls({
               <span className="hidden sm:inline">Share</span>
             </button>
             <button
-              onClick={handleDelete}
-              className={`p-1.5 rounded-lg transition-colors ${
-                deleteStep > 0
-                  ? "text-red-600 bg-red-50 animate-pulse"
-                  : "text-gray-400 hover:text-red-600 hover:bg-red-50"
-              }`}
+              onClick={() => setShowDeleteModal(true)}
+              className="p-1.5 rounded-lg transition-colors text-gray-400 hover:text-red-600 hover:bg-red-50"
             >
               <Trash2 size={16} />
             </button>
           </>
         )}
       </div>
+
+      <ConfirmModal
+        open={showDeleteModal}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${title}"? You can restore it later from the dashboard.`}
+        confirmLabel="Delete Project"
+        danger
+        onConfirm={() => {
+          setShowDeleteModal(false);
+          handleDelete();
+        }}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </div>
   );
 }

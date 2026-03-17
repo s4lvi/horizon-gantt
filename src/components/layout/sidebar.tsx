@@ -110,7 +110,11 @@ export function Sidebar({
                     : "text-gray-700 hover:bg-gray-100"
                 )}
               >
-                <Building2 size={16} />
+                {org.logo_url ? (
+                  <img src={org.logo_url} alt="" className="w-4 h-4 rounded object-cover flex-shrink-0" />
+                ) : (
+                  <Building2 size={16} />
+                )}
                 {org.name}
               </Link>
             ))}
