@@ -127,9 +127,30 @@ export function ActivityForm({
               Computed from children
             </div>
           ) : (
-            <div className="text-sm text-gray-600 pt-1">
-              {formatDateShort(activity.start_date)} →{" "}
-              {formatDateShort(activity.end_date)}
+            <div className="flex items-center gap-1">
+              <input
+                type="date"
+                value={activity.start_date || ""}
+                onChange={(e) =>
+                  handleUpdate({
+                    start_date: e.target.value || null,
+                    ...(!activity.end_date && e.target.value
+                      ? { end_date: e.target.value }
+                      : {}),
+                  })
+                }
+                className="px-1.5 py-1 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
+              />
+              <span className="text-gray-400 text-xs">→</span>
+              <input
+                type="date"
+                value={activity.end_date || ""}
+                min={activity.start_date || undefined}
+                onChange={(e) =>
+                  handleUpdate({ end_date: e.target.value || null })
+                }
+                className="px-1.5 py-1 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
+              />
             </div>
           )}
         </div>
