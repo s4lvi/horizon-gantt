@@ -53,9 +53,9 @@ export function ShareDialog({
       const updated = await getChartShares(chartId);
       setShares(updated);
       setEmail("");
-      toast.success("Chart shared successfully");
+      toast.success("Project shared successfully");
     } catch (err: any) {
-      toast.error(err.message || "Failed to share chart");
+      toast.error(err.message || "Failed to share project");
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ export function ShareDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
-          <h2 className="font-semibold text-gray-900">Share Chart</h2>
+          <h2 className="font-semibold text-gray-900">Share Project</h2>
           <button
             onClick={() => setOpen(false)}
             className="p-1 text-gray-400 hover:text-gray-600 rounded"

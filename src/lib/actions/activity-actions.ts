@@ -3,6 +3,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+async function touchChart(admin: ReturnType<typeof createAdminClient>, chartId: string) {
+  await admin
+    .from("charts")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", chartId);
+}
+
 export async function createActivity(
   chartId: string,
   parentId: string | null = null,
@@ -59,6 +66,7 @@ export async function createActivity(
     .single();
 
   if (error) throw new Error(error.message);
+  await touchChart(admin, chartId);
   return data;
 }
 
@@ -66,6 +74,8 @@ export async function updateActivity(
   activityId: string,
   updates: {
     title?: string;
+    description?: string | null;
+    notes?: string | null;
     start_date?: string | null;
     end_date?: string | null;
     color?: string;
@@ -82,12 +92,21 @@ export async function updateActivity(
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+
+  // Get chart_id to touch the chart
+  const { data: activity } = await admin
+    .from("activities")
+    .select("chart_id")
+    .eq("id", activityId)
+    .single();
+
   const { error } = await admin
     .from("activities")
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("id", activityId);
 
   if (error) throw new Error(error.message);
+  if (activity) await touchChart(admin, activity.chart_id);
 }
 
 export async function deleteActivity(activityId: string) {
@@ -98,11 +117,19 @@ export async function deleteActivity(activityId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+
+  const { data: activity } = await admin
+    .from("activities")
+    .select("chart_id")
+    .eq("id", activityId)
+    .single();
+
   const { error } = await admin
     .from("activities")
     .delete()
     .eq("id", activityId);
   if (error) throw new Error(error.message);
+  if (activity) await touchChart(admin, activity.chart_id);
 }
 
 export async function bulkUpdateActivities(

@@ -17,10 +17,12 @@ export function TimelineControls({
   chart,
   isOwner,
   canEdit,
+  children,
 }: {
   chart: Chart;
   isOwner: boolean;
   canEdit: boolean;
+  children?: React.ReactNode;
 }) {
   const { viewMode, setViewMode, activities } = useGanttStore();
   const [title, setTitle] = useState(chart.title);
@@ -35,12 +37,28 @@ export function TimelineControls({
     }
   };
 
+  const [deleteStep, setDeleteStep] = useState(0);
+
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this chart?")) return;
-    try {
-      await deleteChart(chart.id);
-    } catch {
-      toast.error("Failed to delete chart");
+    if (deleteStep === 0) {
+      setDeleteStep(1);
+      toast.warning("Click delete again to confirm", { duration: 3000 });
+      setTimeout(() => setDeleteStep(0), 5000);
+      return;
+    }
+    if (deleteStep === 1) {
+      setDeleteStep(2);
+      toast.warning(`Final warning: "${title}" and all activities will be permanently deleted.`, { duration: 5000 });
+      setTimeout(() => setDeleteStep(0), 5000);
+      return;
+    }
+    if (deleteStep === 2) {
+      try {
+        await deleteChart(chart.id);
+      } catch {
+        toast.error("Failed to delete project");
+        setDeleteStep(0);
+      }
     }
   };
 
@@ -102,6 +120,7 @@ export function TimelineControls({
       </div>
 
       <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+        {children}
         <div className="flex bg-gray-100 rounded-lg p-0.5">
           {VIEW_OPTIONS.map((opt) => (
             <button
@@ -130,7 +149,7 @@ export function TimelineControls({
         <button
           onClick={handlePrint}
           className="flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Print chart"
+          title="Print project"
         >
           <Printer size={16} />
           <span className="hidden sm:inline">Print</span>
@@ -149,7 +168,11 @@ export function TimelineControls({
             </button>
             <button
               onClick={handleDelete}
-              className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+              className={`p-1.5 rounded-lg transition-colors ${
+                deleteStep > 0
+                  ? "text-red-600 bg-red-50 animate-pulse"
+                  : "text-gray-400 hover:text-red-600 hover:bg-red-50"
+              }`}
             >
               <Trash2 size={16} />
             </button>

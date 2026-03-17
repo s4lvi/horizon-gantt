@@ -11,6 +11,8 @@ import { ActivitySidebar } from "./activity-sidebar";
 import { TimelineControls } from "./timeline-controls";
 import { ActivityForm } from "./activity-form";
 import { ShareDialog } from "./share-dialog";
+import { ProjectComments } from "./project-comments";
+import { MessageSquare } from "lucide-react";
 import { getTimelineRange, getColumns, getColumnWidth } from "@/lib/utils/dates";
 import { buildDisplayRows } from "@/lib/utils/display-rows";
 import { Toaster } from "sonner";
@@ -47,6 +49,7 @@ export function GanttChart({
     setColumnWidth,
   } = useGanttStore();
 
+  const [showComments, setShowComments] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
   const isSyncing = useRef(false);
@@ -150,7 +153,20 @@ export function GanttChart({
   return (
     <div className="flex flex-col h-full">
       <Toaster position="bottom-right" />
-      <TimelineControls chart={chart} isOwner={isOwner} canEdit={canEdit} />
+      <TimelineControls chart={chart} isOwner={isOwner} canEdit={canEdit}>
+        <button
+          onClick={() => setShowComments((prev) => !prev)}
+          className={`flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            showComments
+              ? "bg-[var(--brand-navy)] text-white"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+          title="Toggle discussion"
+        >
+          <MessageSquare size={16} />
+          <span className="hidden sm:inline">Discuss</span>
+        </button>
+      </TimelineControls>
 
       {/* Print-only title */}
       <div className="hidden print-title px-4 py-3 border-b border-gray-200">
@@ -206,6 +222,14 @@ export function GanttChart({
           </div>
         </div>
       </div>
+
+      {showComments && (
+        <ProjectComments
+          chartId={chart.id}
+          currentUserId={currentUserId}
+          onClose={() => setShowComments(false)}
+        />
+      )}
 
       {selectedActivity && canEdit && (
         <ActivityForm

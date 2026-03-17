@@ -52,15 +52,23 @@ export default async function OrgPage({
     .eq("organization_id", orgId);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">{org.name}</h1>
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-6 md:mb-8">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">{org.name}</h1>
+          {(org.description || org.location) && (
+            <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+              {org.location && <span>{org.location}</span>}
+              {org.description && <span>{org.description}</span>}
+            </div>
+          )}
+        </div>
         <CreateOrgChartButton orgId={orgId} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Charts</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Projects</h2>
           {charts && charts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {charts.map((chart: any) => (
@@ -70,7 +78,7 @@ export default async function OrgPage({
           ) : (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
               <p className="text-gray-500">
-                No charts in this organization yet.
+                No projects in this organization yet.
               </p>
             </div>
           )}
@@ -79,6 +87,7 @@ export default async function OrgPage({
         <div>
           <OrgMembers
             orgId={orgId}
+            org={org}
             members={members || []}
             invites={invites || []}
             isAdmin={isAdmin}

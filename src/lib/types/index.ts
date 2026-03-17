@@ -10,6 +10,9 @@ export type Profile = {
 export type Organization = {
   id: string;
   name: string;
+  description: string | null;
+  location: string | null;
+  logo_url: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -62,6 +65,8 @@ export type Activity = {
   id: string;
   chart_id: string;
   title: string;
+  description: string | null;
+  notes: string | null;
   start_date: string | null;
   end_date: string | null;
   color: string;
@@ -72,6 +77,26 @@ export type Activity = {
   created_at: string;
   updated_at: string;
   profiles?: Profile | null;
+};
+
+export type ActivityAttachment = {
+  id: string;
+  activity_id: string;
+  file_name: string;
+  file_url: string;
+  file_size: number | null;
+  uploaded_by: string;
+  created_at: string;
+};
+
+export type ProjectComment = {
+  id: string;
+  chart_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
 };
 
 export type DisplayRow = {

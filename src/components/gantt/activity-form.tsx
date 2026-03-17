@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Activity, Profile } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { updateActivity } from "@/lib/actions/activity-actions";
-import { X } from "lucide-react";
+import { X, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateShort } from "@/lib/utils/dates";
 
@@ -24,6 +25,7 @@ export function ActivityForm({
 }) {
   const { activities, updateActivity: updateStore, setSelectedActivityId } =
     useGanttStore();
+  const [expanded, setExpanded] = useState(false);
 
   const groups = activities.filter(
     (a) => a.is_group && a.id !== activity.id
@@ -39,11 +41,20 @@ export function ActivityForm({
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white px-3 py-2 md:px-4 md:py-3 max-h-[50vh] overflow-y-auto md:max-h-none md:overflow-visible" data-print-hide>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700">
-          {activity.is_group ? "Group Details" : "Activity Details"}
-        </h3>
+    <div className="border-t border-gray-200 bg-white px-3 py-2 md:px-4 md:py-3 max-h-[60vh] overflow-y-auto md:max-h-none md:overflow-visible" data-print-hide>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-700">
+            {activity.is_group ? "Group Details" : "Activity Details"}
+          </h3>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-gray-400 hover:text-gray-600 text-xs flex items-center gap-0.5"
+          >
+            {expanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            {expanded ? "Less" : "More"}
+          </button>
+        </div>
         <button
           onClick={() => setSelectedActivityId(null)}
           className="p-1 text-gray-400 hover:text-gray-600 rounded"
@@ -52,7 +63,8 @@ export function ActivityForm({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      {/* Basic fields */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">
             Title
@@ -64,27 +76,25 @@ export function ActivityForm({
           />
         </div>
 
-        {!activity.is_group && (
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
-              Assignee
-            </label>
-            <select
-              value={activity.assignee_id || ""}
-              onChange={(e) =>
-                handleUpdate({ assignee_id: e.target.value || null })
-              }
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
-            >
-              <option value="">Unassigned</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.full_name || m.email}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">
+            Assignee
+          </label>
+          <select
+            value={activity.assignee_id || ""}
+            onChange={(e) =>
+              handleUpdate({ assignee_id: e.target.value || null })
+            }
+            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
+          >
+            <option value="">Unassigned</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.full_name || m.email}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {!activity.is_group && groups.length > 0 && (
           <div>
@@ -113,11 +123,11 @@ export function ActivityForm({
             Dates
           </label>
           {activity.is_group ? (
-            <div className="text-xs text-gray-400 italic">
+            <div className="text-xs text-gray-400 italic pt-1">
               Computed from children
             </div>
           ) : (
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 pt-1">
               {formatDateShort(activity.start_date)} →{" "}
               {formatDateShort(activity.end_date)}
             </div>
@@ -132,7 +142,7 @@ export function ActivityForm({
             {COLORS.map((color) => (
               <button
                 key={color}
-                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                className={`w-5 h-5 rounded-full border-2 transition-all ${
                   activity.color === color
                     ? "border-gray-800 scale-110"
                     : "border-transparent hover:border-gray-300"
@@ -144,6 +154,36 @@ export function ActivityForm({
           </div>
         </div>
       </div>
+
+      {/* Expanded detail fields */}
+      {expanded && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Description
+            </label>
+            <textarea
+              value={activity.description || ""}
+              onChange={(e) => handleUpdate({ description: e.target.value || null })}
+              placeholder="Add a description..."
+              rows={3}
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none resize-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Notes
+            </label>
+            <textarea
+              value={activity.notes || ""}
+              onChange={(e) => handleUpdate({ notes: e.target.value || null })}
+              placeholder="Internal notes..."
+              rows={3}
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none resize-none"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

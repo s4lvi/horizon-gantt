@@ -7,18 +7,21 @@ import {
   createOrgInviteLink,
   getOrgInviteLinks,
   deleteOrgInviteLink,
+  updateOrganization,
 } from "@/lib/actions/org-actions";
 import { UserPlus, Trash2, Clock, Users, Link, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export function OrgMembers({
   orgId,
+  org,
   members,
   invites,
   isAdmin,
   currentUserId,
 }: {
   orgId: string;
+  org: any;
   members: any[];
   invites: any[];
   isAdmin: boolean;
@@ -88,8 +91,47 @@ export function OrgMembers({
     }
   };
 
+  const [orgDesc, setOrgDesc] = useState(org?.description || "");
+  const [orgLocation, setOrgLocation] = useState(org?.location || "");
+
+  const handleOrgSave = async () => {
+    try {
+      await updateOrganization(orgId, {
+        description: orgDesc || null,
+        location: orgLocation || null,
+      });
+      toast.success("Organization updated");
+    } catch {
+      toast.error("Failed to update organization");
+    }
+  };
+
   return (
     <div>
+      {/* Org settings */}
+      {isAdmin && (
+        <div className="mb-6 pb-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">Settings</h2>
+          <div className="space-y-2">
+            <input
+              value={orgLocation}
+              onChange={(e) => setOrgLocation(e.target.value)}
+              onBlur={handleOrgSave}
+              placeholder="Location"
+              className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
+            />
+            <textarea
+              value={orgDesc}
+              onChange={(e) => setOrgDesc(e.target.value)}
+              onBlur={handleOrgSave}
+              placeholder="Organization description"
+              rows={2}
+              className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none resize-none"
+            />
+          </div>
+        </div>
+      )}
+
       <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
         <Users size={18} />
         Members

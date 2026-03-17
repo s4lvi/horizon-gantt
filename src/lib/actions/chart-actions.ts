@@ -16,7 +16,7 @@ export async function createChart(orgId?: string) {
   const { data, error } = await admin
     .from("charts")
     .insert({
-      title: "Untitled Chart",
+      title: "Untitled Project",
       owner_id: user.id,
       organization_id: orgId || null,
     })

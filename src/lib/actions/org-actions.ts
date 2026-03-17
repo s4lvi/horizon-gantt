@@ -125,6 +125,26 @@ export async function acceptInvite(inviteId: string) {
   revalidatePath("/organizations");
 }
 
+export async function updateOrganization(
+  orgId: string,
+  updates: { name?: string; description?: string | null; location?: string | null; logo_url?: string | null }
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("organizations")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", orgId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/organizations/${orgId}`);
+}
+
 export async function createOrgInviteLink(orgId: string) {
   const supabase = await createClient();
   const {

@@ -49,7 +49,7 @@ export default async function DashboardPage() {
       </div>
 
       <section className="mb-10">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">My Charts</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">My Projects</h2>
         {myCharts && myCharts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {myCharts.map((chart: any) => (
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <p className="text-gray-500">No charts yet. Create your first one!</p>
+            <p className="text-gray-500">No projects yet. Create your first one!</p>
           </div>
         )}
       </section>
@@ -83,7 +83,7 @@ export default async function DashboardPage() {
       {orgCharts.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Organization Charts
+            Organization Projects
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {orgCharts.map((chart: any) => (
