@@ -16,11 +16,12 @@ export default async function AssignmentsPage() {
     .eq("assignee_id", user!.id)
     .order("start_date", { ascending: true });
 
-  // My projects (all activities)
+  // My projects (not deleted)
   const { data: myCharts } = await admin
     .from("charts")
     .select("id, title, organization_id")
-    .eq("owner_id", user!.id);
+    .eq("owner_id", user!.id)
+    .is("deleted_at", null);
 
   // Org memberships
   const { data: orgMemberships } = await admin
@@ -36,7 +37,8 @@ export default async function AssignmentsPage() {
     const { data } = await admin
       .from("charts")
       .select("id, title, organization_id")
-      .in("organization_id", orgIds);
+      .in("organization_id", orgIds)
+      .is("deleted_at", null);
     orgCharts = data || [];
   }
 

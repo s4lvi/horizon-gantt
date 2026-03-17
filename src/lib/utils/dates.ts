@@ -46,8 +46,9 @@ export function getTimelineRange(
     }
   }
 
-  const start = startOfMonth(addDays(earliest, -14));
-  const end = endOfMonth(addDays(latest, 14));
+  // Less padding before today, more after — so today appears towards the left
+  const start = startOfMonth(addDays(earliest, -7));
+  const end = endOfMonth(addDays(latest, 30));
   return { start, end };
 }
 

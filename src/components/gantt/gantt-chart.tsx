@@ -13,7 +13,7 @@ import { ActivityForm } from "./activity-form";
 import { ShareDialog } from "./share-dialog";
 import { ProjectComments } from "./project-comments";
 import { MessageSquare } from "lucide-react";
-import { getTimelineRange, getColumns, getColumnWidth } from "@/lib/utils/dates";
+import { getTimelineRange, getColumns, getColumnWidth, dateToPixel } from "@/lib/utils/dates";
 import { buildDisplayRows } from "@/lib/utils/display-rows";
 import { Toaster } from "sonner";
 
@@ -64,6 +64,9 @@ export function GanttChart({
   useEffect(() => {
     setColumnWidth(getColumnWidth(viewMode));
   }, [viewMode, setColumnWidth]);
+
+  // Auto-scroll to today on initial load
+  const hasScrolled = useRef(false);
 
   // Pinch-to-zoom on the timeline area
   const pinchRef = useRef<{ startDist: number; startWidth: number } | null>(null);
@@ -141,6 +144,15 @@ export function GanttChart({
   const columns = getColumns(timelineStart, timelineEnd, viewMode);
   const totalWidth = columns.length * columnWidth;
   const totalHeight = displayRows.length * ROW_HEIGHT;
+
+  // Auto-scroll to today on initial load
+  useEffect(() => {
+    if (hasScrolled.current || !timelineRef.current || activities.length === 0) return;
+    hasScrolled.current = true;
+    const todayPx = dateToPixel(new Date(), timelineStart, viewMode, columnWidth);
+    const offset = Math.max(0, todayPx - timelineRef.current.clientWidth * 0.15);
+    timelineRef.current.scrollLeft = offset;
+  }, [activities.length, timelineStart, viewMode, columnWidth]);
 
   const selectedActivity = selectedActivityId
     ? activities.find((a) => a.id === selectedActivityId)
