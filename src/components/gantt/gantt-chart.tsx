@@ -12,6 +12,7 @@ import { TimelineControls } from "./timeline-controls";
 import { ActivityForm } from "./activity-form";
 import { ShareDialog } from "./share-dialog";
 import { ProjectComments } from "./project-comments";
+import { PrintView } from "./print-view";
 import { MessageSquare } from "lucide-react";
 import { getTimelineRange, getOccupiedRange, getColumns, getColumnWidth, dateToPixel } from "@/lib/utils/dates";
 import { buildDisplayRows } from "@/lib/utils/display-rows";
@@ -167,6 +168,9 @@ export function GanttChart({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Print-only static view */}
+      <PrintView title={chart.title} />
+
       <Toaster position="bottom-right" />
       <TimelineControls chart={chart} isOwner={isOwner} canEdit={canEdit}>
         <button
@@ -183,12 +187,7 @@ export function GanttChart({
         </button>
       </TimelineControls>
 
-      {/* Print-only title */}
-      <div className="hidden print-title px-4 py-3 border-b border-gray-200">
-        <h1 className="text-lg font-bold text-gray-900">{chart.title}</h1>
-      </div>
-
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden print-chart-area" style={{ ["--print-total-width" as string]: `${printTotalWidth}px` }}>
+      <div className="screen-only flex flex-col md:flex-row flex-1 overflow-hidden">
         <ActivitySidebar
           displayRows={displayRows}
           chartId={chart.id}

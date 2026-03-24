@@ -55,97 +55,43 @@ h1, h2, h3 {
   background: #94a3b8;
 }
 
-/* Print styles */
+/* Print-only view: hidden on screen, shown in print */
+.print-only-view {
+  display: none;
+}
+
+/* Screen-only: hidden in print */
+@media print {
+  .screen-only,
+  [data-print-hide],
+  footer,
+  aside {
+    display: none !important;
+  }
+
+  .print-only-view {
+    display: block !important;
+  }
+}
+
 @media print {
   @page {
     size: landscape;
-    margin: 0.4cm;
+    margin: 0.3cm;
   }
 
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    font-size: 10px;
   }
 
-  /* Hide app sidebar navigation, controls, form panel, footer */
-  aside:not(.print-chart-area *),
-  [data-print-hide],
-  footer {
-    display: none !important;
-  }
-
-  /* Show the print title */
-  .print-title {
-    display: block !important;
-    padding: 4px 8px !important;
-    border-bottom: 1px solid #ddd !important;
-  }
-
-  .print-title h1 {
-    font-size: 14px !important;
-    margin: 0 !important;
-  }
-
-  /* Reset all layout constraints */
+  /* Reset all layout constraints so the print view can flow */
   main,
   main > div,
   main > div > div {
     height: auto !important;
     overflow: visible !important;
     max-height: none !important;
-  }
-
-  /* The chart area: scale to fit page width based on occupied range */
-  .print-chart-area {
-    overflow: visible !important;
-    height: auto !important;
-    flex-direction: row !important;
-    width: var(--print-total-width) !important;
-    transform-origin: top left;
-    scale: calc(267mm / var(--print-total-width));
-  }
-
-  /* Activity sidebar in print: always show, readable width */
-  .print-chart-area > div:first-child {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: visible !important;
-    width: 180px !important;
-    max-height: none !important;
-    border-right: 1px solid #ddd !important;
-    border-bottom: none !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* Make sidebar text readable */
-  .print-chart-area > div:first-child * {
-    font-size: 8px !important;
-    line-height: 1.2 !important;
-  }
-
-  /* Timeline area */
-  .print-chart-area > div:last-child {
-    overflow: visible !important;
-    flex: 1 !important;
-    min-height: 0 !important;
-  }
-
-  /* All overflow containers */
-  .overflow-auto,
-  .overflow-hidden,
-  .overflow-y-auto {
-    overflow: visible !important;
-    max-height: none !important;
-  }
-
-  /* Remove sticky positioning */
-  .sticky {
-    position: relative !important;
-  }
-
-  /* Tighter header in print */
-  .print-chart-area .border-b {
-    border-color: #ddd !important;
+    display: block !important;
   }
 }
