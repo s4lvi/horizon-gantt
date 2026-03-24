@@ -19,13 +19,14 @@ export function MobileSidebarWrapper({
   return (
     <>
       {/* Mobile top bar — in document flow, not fixed */}
-      <div className="md:hidden flex items-center gap-3 px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="md:hidden flex items-center gap-2.5 px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
         <button
           onClick={() => setMenuOpen(true)}
           className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-700"
         >
           <Menu size={20} />
         </button>
+        <img src="/horizon-logo.svg" alt="" className="w-6 h-6 rounded" />
         <span
           className="text-base font-bold text-gray-900"
           style={{ fontFamily: "'Eurostile', sans-serif" }}
@@ -46,9 +47,10 @@ export function MobileSidebarWrapper({
           >
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <span
-                className="text-lg font-bold text-gray-900"
+                className="text-lg font-bold text-gray-900 flex items-center gap-2"
                 style={{ fontFamily: "'Eurostile', sans-serif" }}
               >
+                <img src="/horizon-logo.svg" alt="" className="w-7 h-7 rounded" />
                 Horizon Gantt
               </span>
               <button

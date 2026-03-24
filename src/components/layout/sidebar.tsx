@@ -56,14 +56,19 @@ export function Sidebar({
     >
       {!compact && (
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          {show && (
+          {show ? (
             <Link
               href="/dashboard"
               onClick={onNavigate}
-              className="text-xl font-bold text-gray-900"
+              className="flex items-center gap-2 text-xl font-bold text-gray-900"
               style={{ fontFamily: "'Eurostile', sans-serif" }}
             >
+              <img src="/horizon-logo.svg" alt="" className="w-7 h-7 rounded" />
               Horizon Gantt
+            </Link>
+          ) : (
+            <Link href="/dashboard" onClick={onNavigate}>
+              <img src="/horizon-logo.svg" alt="" className="w-7 h-7 rounded" />
             </Link>
           )}
           <button

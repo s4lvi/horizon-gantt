@@ -1,0 +1,16 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="256" height="256" rx="40" fill="#243E63"></rect>
+
+  <!-- Horizon (thicker, dominant) -->
+  <rect x="32" y="128" width="192" height="12" fill="#E63946"></rect>
+
+  <!-- Large Sun (expanded visual weight) -->
+  <path d="M32 128 A56 56 0 0 1 144 128 Z" fill="#E63946"></path>
+
+  <!-- Gantt Bars (thicker + aligned to grid) -->
+  <rect x="144" y="80" width="80" height="12" fill="#E63946"></rect>
+  <rect x="144" y="104" width="64" height="12" fill="#E63946"></rect>
+  <rect x="144" y="128" width="96" height="12" fill="#E63946"></rect>
+  <rect x="144" y="152" width="56" height="12" fill="#E63946"></rect>
+</svg>

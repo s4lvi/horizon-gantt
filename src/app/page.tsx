@@ -16,7 +16,10 @@ export default async function LandingPage() {
     <div className="min-h-screen flex flex-col bg-white">
       <header className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Horizon Gantt</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <img src="/horizon-logo.svg" alt="" className="w-7 h-7 md:w-8 md:h-8 rounded" />
+            Horizon Gantt
+          </h1>
           <Link
             href="/login"
             className="px-4 py-2 text-white rounded-lg transition-colors font-medium text-sm"
