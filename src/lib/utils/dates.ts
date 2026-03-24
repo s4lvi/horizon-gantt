@@ -52,6 +52,30 @@ export function getTimelineRange(
   return { start, end };
 }
 
+export function getOccupiedRange(
+  activities: { start_date: string | null; end_date: string | null }[]
+): { start: Date; end: Date } {
+  const now = new Date();
+  let earliest: Date | null = null;
+  let latest: Date | null = null;
+
+  for (const a of activities) {
+    if (a.start_date) {
+      const s = parseISO(a.start_date);
+      if (!earliest || s < earliest) earliest = s;
+    }
+    if (a.end_date) {
+      const e = parseISO(a.end_date);
+      if (!latest || e > latest) latest = e;
+    }
+  }
+
+  // Tight padding — just enough context
+  const start = startOfMonth(addDays(earliest || now, -3));
+  const end = endOfMonth(addDays(latest || now, 7));
+  return { start, end };
+}
+
 export function getColumns(
   start: Date,
   end: Date,

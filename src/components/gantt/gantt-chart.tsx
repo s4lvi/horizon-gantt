@@ -13,7 +13,7 @@ import { ActivityForm } from "./activity-form";
 import { ShareDialog } from "./share-dialog";
 import { ProjectComments } from "./project-comments";
 import { MessageSquare } from "lucide-react";
-import { getTimelineRange, getColumns, getColumnWidth, dateToPixel } from "@/lib/utils/dates";
+import { getTimelineRange, getOccupiedRange, getColumns, getColumnWidth, dateToPixel } from "@/lib/utils/dates";
 import { buildDisplayRows } from "@/lib/utils/display-rows";
 import { Toaster } from "sonner";
 
@@ -158,9 +158,12 @@ export function GanttChart({
     ? activities.find((a) => a.id === selectedActivityId)
     : null;
 
-  // Sidebar width for print layout
-  const sidebarWidth = 240;
-  const printTotalWidth = sidebarWidth + totalWidth;
+  // Print layout: compute a tighter range that only covers occupied dates
+  const sidebarWidth = 180; // matches print CSS
+  const occupiedRange = getOccupiedRange(activities);
+  const printColumns = getColumns(occupiedRange.start, occupiedRange.end, viewMode);
+  const printTimelineWidth = printColumns.length * columnWidth;
+  const printTotalWidth = sidebarWidth + printTimelineWidth;
 
   return (
     <div className="flex flex-col h-full">
