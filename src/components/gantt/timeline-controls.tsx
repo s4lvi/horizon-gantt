@@ -91,7 +91,7 @@ export function TimelineControls({
 
   return (
     <div className="flex flex-col gap-1 md:gap-0 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 md:px-4 md:py-3 bg-white border-b border-gray-200" data-print-hide>
-      <div className="flex items-center gap-2 pl-11 md:pl-0 mb-1 md:mb-0">
+      <div className="flex items-center gap-2 mb-1 md:mb-0">
         {canEdit ? (
           <input
             value={title}

@@ -29,7 +29,7 @@ export default async function AppLayout({
     .eq("user_id", user.id);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-dvh bg-gray-50">
       <MobileSidebarWrapper
         profile={profile}
         organizations={orgs?.map((o: any) => o.organizations) || []}

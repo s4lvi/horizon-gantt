@@ -106,7 +106,9 @@ export default async function DashboardPage() {
       )}
 
       {deletedCharts && deletedCharts.length > 0 && (
-        <DeletedProjects charts={deletedCharts} />
+        <div className="hidden md:block">
+          <DeletedProjects charts={deletedCharts} />
+        </div>
       )}
     </div>
   );

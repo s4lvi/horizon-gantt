@@ -18,13 +18,21 @@ export function MobileSidebarWrapper({
 
   return (
     <>
-      {/* Mobile hamburger button */}
-      <button
-        onClick={() => setMenuOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-50 p-2 bg-white rounded-lg shadow-md border border-gray-200"
-      >
-        <Menu size={20} className="text-gray-700" />
-      </button>
+      {/* Mobile top bar — in document flow, not fixed */}
+      <div className="md:hidden flex items-center gap-3 px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
+        <button
+          onClick={() => setMenuOpen(true)}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-700"
+        >
+          <Menu size={20} />
+        </button>
+        <span
+          className="text-base font-bold text-gray-900"
+          style={{ fontFamily: "'Eurostile', sans-serif" }}
+        >
+          Horizon Gantt
+        </span>
+      </div>
 
       {/* Mobile modal overlay */}
       {menuOpen && (
@@ -63,7 +71,7 @@ export function MobileSidebarWrapper({
       )}
 
       {/* Desktop sidebar + content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <div className="hidden md:flex">
           <Sidebar profile={profile} organizations={organizations} />
         </div>
