@@ -141,14 +141,15 @@ export function GanttBar({
   );
   const width = Math.max(right - left, columnWidth);
 
-  // Collapsed group bar — not draggable
   const isCollapsedGroup = displayRow.isGroup && displayRow.isCollapsed;
 
   const handleMouseDown = (
     e: React.MouseEvent,
     type: "move" | "resize-start" | "resize-end"
   ) => {
-    if (!canEdit || isCollapsedGroup) return;
+    if (!canEdit) return;
+    // Collapsed groups can only be moved as a whole, not resized.
+    if (isCollapsedGroup && type !== "move") return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -157,12 +158,30 @@ export function GanttBar({
     const scrollContainer = barRef.current?.closest(".overflow-auto");
     const initialScrollLeft = scrollContainer?.scrollLeft ?? 0;
 
+    // Snapshot original dates for each child when moving a collapsed group.
+    const childOriginals = isCollapsedGroup
+      ? activities
+          .filter(
+            (a) =>
+              a.parent_id === activity.id && a.start_date && a.end_date
+          )
+          .map((a) => ({
+            id: a.id,
+            start: a.start_date!,
+            end: a.end_date!,
+          }))
+      : [];
+
     setDragState({
       activityId: activity.id,
       type,
       startX: e.clientX,
-      originalStart: activity.start_date!,
-      originalEnd: activity.end_date!,
+      originalStart: isCollapsedGroup
+        ? displayRow.groupStartDate!
+        : activity.start_date!,
+      originalEnd: isCollapsedGroup
+        ? displayRow.groupEndDate!
+        : activity.end_date!,
     });
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -172,10 +191,29 @@ export function GanttBar({
       const dayDelta = Math.round(dx / columnWidth);
       if (dayDelta === 0) return;
 
-      const origStart = parseISO(activity.start_date!);
-      const origEnd = parseISO(activity.end_date!);
       const unitMultiplier = viewMode === "months-weeks" ? 7 : 1;
       const adjustedDelta = dayDelta * unitMultiplier;
+
+      if (isCollapsedGroup) {
+        const state = useGanttStore.getState();
+        const byId = new Map(childOriginals.map((c) => [c.id, c]));
+        const next = state.activities.map((a) => {
+          const orig = byId.get(a.id);
+          if (!orig) return a;
+          const newStart = addDays(parseISO(orig.start), adjustedDelta);
+          const newEnd = addDays(parseISO(orig.end), adjustedDelta);
+          return {
+            ...a,
+            start_date: format(newStart, "yyyy-MM-dd"),
+            end_date: format(newEnd, "yyyy-MM-dd"),
+          };
+        });
+        setActivities(next);
+        return;
+      }
+
+      const origStart = parseISO(activity.start_date!);
+      const origEnd = parseISO(activity.end_date!);
 
       let newStart: Date, newEnd: Date;
 
@@ -204,11 +242,18 @@ export function GanttBar({
       setDragState(null);
 
       const store = useGanttStore.getState();
-      const cascaded = cascadeDependencies(
-        store.activities,
-        store.dependencies,
-        activity.id
-      );
+      let cascaded = store.activities;
+      if (isCollapsedGroup) {
+        for (const c of childOriginals) {
+          cascaded = cascadeDependencies(cascaded, store.dependencies, c.id);
+        }
+      } else {
+        cascaded = cascadeDependencies(
+          store.activities,
+          store.dependencies,
+          activity.id
+        );
+      }
       setActivities(cascaded);
 
       const changed = cascaded.filter((a) => {
@@ -241,9 +286,9 @@ export function GanttBar({
       ref={barRef}
       className={cn(
         "absolute rounded-md select-none flex items-center group",
-        isCollapsedGroup
-          ? "cursor-default"
-          : "cursor-grab active:cursor-grabbing",
+        canEdit
+          ? "cursor-grab active:cursor-grabbing"
+          : "cursor-default",
         isSelected && "ring-2 ring-[var(--brand-navy)] ring-offset-1"
       )}
       style={{
@@ -279,7 +324,10 @@ export function GanttBar({
         setSelectedActivityId(isSelected ? null : activity.id);
       }}
       onMouseDown={(e) => {
-        if (isCollapsedGroup) return;
+        if (isCollapsedGroup) {
+          handleMouseDown(e, "move");
+          return;
+        }
         const rect = barRef.current?.getBoundingClientRect();
         if (!rect) return;
         const relX = e.clientX - rect.left;
