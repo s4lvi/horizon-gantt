@@ -14,6 +14,7 @@ import {
   isSameWeek,
   isToday,
   parseISO,
+  startOfToday,
 } from "date-fns";
 import { ViewMode } from "@/lib/types";
 
@@ -191,4 +192,11 @@ export function dateToPixel(
 export function formatDateShort(date: string | null): string {
   if (!date) return "—";
   return format(parseISO(date), "MMM d, yyyy");
+}
+
+// An activity is past due when its end date is strictly before today.
+// Whitespace/null end dates are never past due; "done" status is handled by callers.
+export function isPastDue(endDate: string | null): boolean {
+  if (!endDate) return false;
+  return parseISO(endDate) < startOfToday();
 }

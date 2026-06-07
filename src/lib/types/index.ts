@@ -75,6 +75,7 @@ export type Activity = {
   sort_order: number;
   parent_id: string | null;
   is_group: boolean;
+  is_done: boolean;
   created_at: string;
   updated_at: string;
   profiles?: Profile | null;

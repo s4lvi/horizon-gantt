@@ -4,9 +4,9 @@ import { useState } from "react";
 import { Activity, Profile } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { updateActivity } from "@/lib/actions/activity-actions";
-import { X, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ChevronDown, ChevronUp, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { formatDateShort } from "@/lib/utils/dates";
+import { formatDateShort, isPastDue } from "@/lib/utils/dates";
 
 const COLORS = [
   "#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6",
@@ -31,6 +31,9 @@ export function ActivityForm({
     (a) => a.is_group && a.id !== activity.id
   );
 
+  const showPastDue =
+    !activity.is_group && !activity.is_done && isPastDue(activity.end_date);
+
   const handleUpdate = async (updates: Partial<Activity>) => {
     updateStore(activity.id, updates);
     try {
@@ -54,6 +57,32 @@ export function ActivityForm({
             {expanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
             {expanded ? "Less" : "More"}
           </button>
+
+          {!activity.is_group && (
+            <button
+              onClick={() => handleUpdate({ is_done: !activity.is_done })}
+              className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md border transition-colors ${
+                activity.is_done
+                  ? "border-green-500 text-green-600 bg-green-50 hover:bg-green-100"
+                  : "border-gray-200 text-gray-500 hover:bg-gray-50"
+              }`}
+              title={activity.is_done ? "Mark as not done" : "Mark as done"}
+            >
+              {activity.is_done ? (
+                <CheckCircle2 size={14} />
+              ) : (
+                <Circle size={14} />
+              )}
+              {activity.is_done ? "Done" : "Mark done"}
+            </button>
+          )}
+
+          {showPastDue && (
+            <span className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md bg-red-50 text-red-600 border border-red-500">
+              <AlertTriangle size={14} />
+              Past due
+            </span>
+          )}
         </div>
         <button
           onClick={() => setSelectedActivityId(null)}

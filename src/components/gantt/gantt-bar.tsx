@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { DisplayRow } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
-import { dateToPixel, pixelToDate } from "@/lib/utils/dates";
+import { dateToPixel, pixelToDate, isPastDue } from "@/lib/utils/dates";
 import { updateActivity } from "@/lib/actions/activity-actions";
 import { cascadeDependencies } from "@/lib/utils/dependency-engine";
 import { bulkUpdateActivities } from "@/lib/actions/activity-actions";
@@ -281,6 +281,17 @@ export function GanttBar({
 
   const isSelected = selectedActivityId === activity.id;
 
+  // Status border: done (bright green) takes precedence over past due (bright red).
+  // Only leaf activities carry a status; groups are aggregates.
+  const isDone = !displayRow.isGroup && activity.is_done;
+  const pastDue =
+    !displayRow.isGroup && !activity.is_done && isPastDue(effectiveEndDate);
+  const statusBorderColor = isDone
+    ? "#22c55e"
+    : pastDue
+    ? "#ef4444"
+    : undefined;
+
   return (
     <div
       ref={barRef}
@@ -297,6 +308,9 @@ export function GanttBar({
         width,
         height: barHeight,
         backgroundColor: activity.color,
+        ...(statusBorderColor && {
+          border: `2px solid ${statusBorderColor}`,
+        }),
         ...(isCollapsedGroup && {
           backgroundImage: `repeating-linear-gradient(
             45deg,

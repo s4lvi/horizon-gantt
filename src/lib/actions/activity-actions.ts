@@ -83,6 +83,7 @@ export async function updateActivity(
     sort_order?: number;
     parent_id?: string | null;
     is_group?: boolean;
+    is_done?: boolean;
   }
 ) {
   const supabase = await createClient();
