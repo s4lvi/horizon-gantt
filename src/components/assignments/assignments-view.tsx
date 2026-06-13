@@ -2,11 +2,15 @@
 
 import { useState, useMemo } from "react";
 import { format, startOfWeek, endOfWeek, parseISO, isWithinInterval } from "date-fns";
+import { isPastDue } from "@/lib/utils/dates";
+import { AlertTriangle } from "lucide-react";
 
 function ActivityRow({ a, weekStart, weekEnd }: { a: any; weekStart: Date; weekEnd: Date }) {
-  const endsThisWeek = a.end_date
-    ? isWithinInterval(parseISO(a.end_date), { start: weekStart, end: weekEnd })
-    : false;
+  const overdue = !a.is_group && !a.is_done && isPastDue(a.end_date);
+  const endsThisWeek =
+    !overdue && a.end_date
+      ? isWithinInterval(parseISO(a.end_date), { start: weekStart, end: weekEnd })
+      : false;
 
   return (
     <a
@@ -25,6 +29,12 @@ function ActivityRow({ a, weekStart, weekEnd }: { a: any; weekStart: Date; weekE
           {a.profiles?.full_name && (
             <span className="text-xs text-gray-400">{a.profiles.full_name}</span>
           )}
+          {overdue && (
+            <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full font-medium">
+              <AlertTriangle size={11} />
+              Overdue
+            </span>
+          )}
           {endsThisWeek && (
             <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
               Finishes this week
@@ -41,9 +51,20 @@ function ActivityRow({ a, weekStart, weekEnd }: { a: any; weekStart: Date; weekE
   );
 }
 
+// Overdue: a leaf activity whose end date is in the past and isn't marked done.
+function isOverdue(a: any): boolean {
+  return !a.is_group && !a.is_done && isPastDue(a.end_date);
+}
+
+function filterOverdue(activities: any[]) {
+  return activities.filter(isOverdue);
+}
+
 function filterThisWeek(activities: any[], weekStart: Date, weekEnd: Date) {
   return activities.filter((a: any) => {
     if (!a.start_date || !a.end_date) return false;
+    // Overdue items get their own section — don't also list them here.
+    if (isOverdue(a)) return false;
     const start = parseISO(a.start_date);
     const end = parseISO(a.end_date);
     return (
@@ -88,6 +109,7 @@ export function AssignmentsView({
     return allActivities.filter((a: any) => a.chart_id === selectedProjectId);
   }, [tab, selectedProjectId, myActivities, allActivities]);
 
+  const overdue = filterOverdue(sourceActivities);
   const thisWeek = filterThisWeek(sourceActivities, weekStart, weekEnd);
   const upcoming = filterUpcoming(sourceActivities, weekEnd);
 
@@ -143,6 +165,24 @@ export function AssignmentsView({
           </select>
         )}
       </div>
+
+      {/* Overdue */}
+      {overdue.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-red-700 mb-3 flex items-center gap-2">
+            <AlertTriangle size={18} />
+            Overdue
+            <span className="text-sm font-normal text-red-400">
+              {overdue.length}
+            </span>
+          </h2>
+          <div className="space-y-2">
+            {overdue.map((a: any) => (
+              <ActivityRow key={a.id} a={a} weekStart={weekStart} weekEnd={weekEnd} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* This Week */}
       <section className="mb-8">
