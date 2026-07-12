@@ -1,16 +1,27 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format, startOfWeek, endOfWeek, parseISO, isWithinInterval } from "date-fns";
 import { isPastDue } from "@/lib/utils/dates";
 import { updateChecklistItem } from "@/lib/actions/checklist-actions";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
-function ActivityRow({ a, weekStart, weekEnd }: { a: any; weekStart: Date; weekEnd: Date }) {
+function ActivityRow({
+  a,
+  weekStart,
+  weekEnd,
+  canEdit,
+}: {
+  a: any;
+  weekStart: Date;
+  weekEnd: Date;
+  canEdit: boolean;
+}) {
+  const done = !a.is_group && a.is_done;
   const overdue = !a.is_group && !a.is_done && isPastDue(a.end_date);
   const endsThisWeek =
-    !overdue && a.end_date
+    !done && !overdue && a.end_date
       ? isWithinInterval(parseISO(a.end_date), { start: weekStart, end: weekEnd })
       : false;
 
@@ -26,15 +37,27 @@ function ActivityRow({ a, weekStart, weekEnd }: { a: any; weekStart: Date; weekE
   const [checked, setChecked] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(allItems.map((i: any) => [i.id, i.is_done]))
   );
+  // Pick up items added/changed if the props ever refresh without a remount.
+  useEffect(() => {
+    setChecked((prev) => {
+      const next = { ...prev };
+      for (const item of allItems) {
+        if (!(item.id in next)) next[item.id] = item.is_done;
+      }
+      return next;
+    });
+  }, [allItems]);
   const visibleItems = allItems.filter((i: any) => !i.is_done);
   const doneCount = allItems.filter((i: any) => checked[i.id]).length;
 
   const toggleItem = (item: any) => {
+    if (!canEdit) return;
     const next = !checked[item.id];
     setChecked((c) => ({ ...c, [item.id]: next }));
-    updateChecklistItem(item.id, { is_done: next }).catch(() =>
-      toast.error("Failed to update checklist")
-    );
+    updateChecklistItem(item.id, { is_done: next }).catch(() => {
+      setChecked((c) => ({ ...c, [item.id]: !next }));
+      toast.error("Failed to update checklist");
+    });
   };
 
   return (
@@ -58,6 +81,12 @@ function ActivityRow({ a, weekStart, weekEnd }: { a: any; weekStart: Date; weekE
             {allItems.length > 0 && (
               <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full font-medium tabular-nums">
                 {doneCount}/{allItems.length}
+              </span>
+            )}
+            {done && (
+              <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                <CheckCircle2 size={11} />
+                Done
               </span>
             )}
             {overdue && (
@@ -90,8 +119,9 @@ function ActivityRow({ a, weekStart, weekEnd }: { a: any; weekStart: Date; weekE
               <input
                 type="checkbox"
                 checked={!!checked[item.id]}
+                disabled={!canEdit}
                 onChange={() => toggleItem(item)}
-                className="accent-green-600 flex-shrink-0 cursor-pointer"
+                className="accent-green-600 flex-shrink-0 cursor-pointer disabled:cursor-default"
               />
               <span
                 className={`text-sm truncate ${
@@ -147,16 +177,17 @@ export function AssignmentsView({
   allActivities,
   projects,
   orgs,
-  currentUserId,
+  editableChartIds,
 }: {
   myActivities: any[];
   allActivities: any[];
   projects: any[];
   orgs: any[];
-  currentUserId: string;
+  editableChartIds: string[];
 }) {
   const [tab, setTab] = useState<"mine" | "project">("mine");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
+  const editableSet = useMemo(() => new Set(editableChartIds), [editableChartIds]);
 
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
@@ -237,7 +268,7 @@ export function AssignmentsView({
           </h2>
           <div className="space-y-2">
             {overdue.map((a: any) => (
-              <ActivityRow key={a.id} a={a} weekStart={weekStart} weekEnd={weekEnd} />
+              <ActivityRow key={a.id} a={a} weekStart={weekStart} weekEnd={weekEnd} canEdit={editableSet.has(a.chart_id)} />
             ))}
           </div>
         </section>
@@ -254,7 +285,7 @@ export function AssignmentsView({
         {thisWeek.length > 0 ? (
           <div className="space-y-2">
             {thisWeek.map((a: any) => (
-              <ActivityRow key={a.id} a={a} weekStart={weekStart} weekEnd={weekEnd} />
+              <ActivityRow key={a.id} a={a} weekStart={weekStart} weekEnd={weekEnd} canEdit={editableSet.has(a.chart_id)} />
             ))}
           </div>
         ) : (
@@ -272,7 +303,7 @@ export function AssignmentsView({
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Upcoming</h2>
           <div className="space-y-2">
             {upcoming.map((a: any) => (
-              <ActivityRow key={a.id} a={a} weekStart={weekStart} weekEnd={weekEnd} />
+              <ActivityRow key={a.id} a={a} weekStart={weekStart} weekEnd={weekEnd} canEdit={editableSet.has(a.chart_id)} />
             ))}
           </div>
         </section>

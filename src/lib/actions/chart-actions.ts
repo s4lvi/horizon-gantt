@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { assertCanEditChart, assertChartOwner } from "@/lib/authz";
 
 export async function createChart(orgId?: string) {
   const supabase = await createClient();
@@ -38,6 +39,8 @@ export async function updateChart(
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertCanEditChart(admin, user.id, chartId);
+
   const { error } = await admin
     .from("charts")
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -82,6 +85,8 @@ export async function restoreChart(chartId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertChartOwner(admin, user.id, chartId);
+
   const { error } = await admin
     .from("charts")
     .update({ deleted_at: null })

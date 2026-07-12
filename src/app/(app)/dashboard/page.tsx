@@ -4,6 +4,9 @@ import { ChartCard } from "@/components/dashboard/chart-card";
 import { CreateChartButton } from "@/components/dashboard/create-chart-button";
 import { DeletedProjects } from "@/components/dashboard/deleted-projects";
 
+const CHART_FIELDS =
+  "*, profiles(id, email, full_name, avatar_url), organizations(name)";
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -11,47 +14,52 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // My charts (not deleted)
-  const { data: myCharts } = await admin
-    .from("charts")
-    .select("*, profiles(*), organizations(name)")
-    .eq("owner_id", user!.id)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
-
-  // Shared with me (not deleted)
-  const { data: sharedCharts } = await admin
-    .from("chart_shares")
-    .select("permission, charts!inner(*, profiles(*), organizations(name))")
-    .eq("user_id", user!.id)
-    .is("charts.deleted_at", null);
+  const [
+    { data: myCharts },
+    { data: sharedCharts },
+    { data: orgMemberships },
+    { data: deletedCharts },
+  ] = await Promise.all([
+    // My charts (not deleted)
+    admin
+      .from("charts")
+      .select(CHART_FIELDS)
+      .eq("owner_id", user!.id)
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false }),
+    // Shared with me (not deleted)
+    admin
+      .from("chart_shares")
+      .select(`permission, charts!inner(${CHART_FIELDS})`)
+      .eq("user_id", user!.id)
+      .is("charts.deleted_at", null),
+    // Org memberships
+    admin
+      .from("organization_members")
+      .select("organization_id")
+      .eq("user_id", user!.id),
+    // Deleted charts (mine only)
+    admin
+      .from("charts")
+      .select(CHART_FIELDS)
+      .eq("owner_id", user!.id)
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false }),
+  ]);
 
   // Org charts (not owned by me, not deleted)
-  const { data: orgMemberships } = await admin
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", user!.id);
-
   const orgIds = orgMemberships?.map((m: any) => m.organization_id) || [];
   let orgCharts: any[] = [];
   if (orgIds.length > 0) {
     const { data } = await admin
       .from("charts")
-      .select("*, profiles(*), organizations(name)")
+      .select(CHART_FIELDS)
       .in("organization_id", orgIds)
       .neq("owner_id", user!.id)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false });
     orgCharts = data || [];
   }
-
-  // Deleted charts (mine only)
-  const { data: deletedCharts } = await admin
-    .from("charts")
-    .select("*, profiles(*), organizations(name)")
-    .eq("owner_id", user!.id)
-    .not("deleted_at", "is", null)
-    .order("deleted_at", { ascending: false });
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">

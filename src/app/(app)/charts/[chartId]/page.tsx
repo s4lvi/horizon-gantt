@@ -24,16 +24,16 @@ export default async function ChartPage({
 
   if (!chart) notFound();
 
-  const { data: activities } = await admin
-    .from("activities")
-    .select("*, profiles(*), checklist_items:activity_checklist_items(*)")
-    .eq("chart_id", chartId)
-    .order("sort_order", { ascending: true });
-
-  const { data: dependencies } = await admin
-    .from("dependencies")
-    .select("*")
-    .eq("chart_id", chartId);
+  const [{ data: activities }, { data: dependencies }] = await Promise.all([
+    admin
+      .from("activities")
+      .select(
+        "*, profiles(id, email, full_name, avatar_url), checklist_items:activity_checklist_items(*)"
+      )
+      .eq("chart_id", chartId)
+      .order("sort_order", { ascending: true }),
+    admin.from("dependencies").select("*").eq("chart_id", chartId),
+  ]);
 
   // Determine edit permission
   const isOwner = chart.owner_id === user.id;
@@ -61,30 +61,28 @@ export default async function ChartPage({
     if (membership) canEdit = true;
   }
 
-  // Get org members for assignee dropdown
-  let members: any[] = [];
-  if (chart.organization_id) {
-    const { data } = await admin
-      .from("organization_members")
+  // Org members, chart shares, and owner profile for the assignee dropdown
+  const [orgMembersResult, sharesResult, ownerResult] = await Promise.all([
+    chart.organization_id
+      ? admin
+          .from("organization_members")
+          .select("user_id, profiles(id, email, full_name, avatar_url)")
+          .eq("organization_id", chart.organization_id)
+      : Promise.resolve({ data: null }),
+    admin
+      .from("chart_shares")
       .select("user_id, profiles(id, email, full_name, avatar_url)")
-      .eq("organization_id", chart.organization_id);
-    members = data?.map((m: any) => m.profiles) || [];
-  }
+      .eq("chart_id", chartId),
+    admin
+      .from("profiles")
+      .select("id, email, full_name, avatar_url")
+      .eq("id", chart.owner_id)
+      .single(),
+  ]);
 
-  // Also get chart shares for assignee options
-  const { data: shares } = await admin
-    .from("chart_shares")
-    .select("user_id, profiles(id, email, full_name, avatar_url)")
-    .eq("chart_id", chartId);
-
-  const shareMembers = shares?.map((s: any) => s.profiles) || [];
-
-  // Get owner profile
-  const { data: ownerProfile } = await admin
-    .from("profiles")
-    .select("*")
-    .eq("id", chart.owner_id)
-    .single();
+  const members = orgMembersResult.data?.map((m: any) => m.profiles) || [];
+  const shareMembers = sharesResult.data?.map((s: any) => s.profiles) || [];
+  const ownerProfile = ownerResult.data;
 
   const allMembers = [
     ownerProfile,

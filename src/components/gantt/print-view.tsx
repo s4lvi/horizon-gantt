@@ -2,7 +2,7 @@
 
 import { Activity, Dependency, DisplayRow } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
-import { getOccupiedRange, getColumns, getHeaderGroups, dateToPixel } from "@/lib/utils/dates";
+import { getOccupiedRange, getColumns, getHeaderGroups, dateToPixel, isPastDue } from "@/lib/utils/dates";
 import { parseISO, addDays, format, isWeekend } from "date-fns";
 import { buildDisplayRows } from "@/lib/utils/display-rows";
 
@@ -56,6 +56,9 @@ export function PrintView({ title }: { title: string }) {
               }}
             >
               {row.activity.title}
+              {!row.isGroup &&
+                (row.activity.checklist_items?.length ?? 0) > 0 &&
+                ` (${row.activity.checklist_items!.filter((i) => i.is_done).length}/${row.activity.checklist_items!.length})`}
             </div>
           ))}
         </div>
@@ -159,6 +162,15 @@ export function PrintView({ title }: { title: string }) {
               const barHeight = row.isGroup && !row.isCollapsed ? 4 : PRINT_ROW_HEIGHT - 6;
               const barTop = row.isGroup && !row.isCollapsed ? top + (PRINT_ROW_HEIGHT - 6) / 2 - 2 : top;
 
+              // Same status colors as the screen bars: done wins over past due.
+              const statusBorderColor = row.isGroup
+                ? undefined
+                : a.is_done
+                ? "#22c55e"
+                : isPastDue(a.end_date)
+                ? "#ef4444"
+                : undefined;
+
               return (
                 <div
                   key={a.id}
@@ -169,6 +181,9 @@ export function PrintView({ title }: { title: string }) {
                     width,
                     height: barHeight,
                     backgroundColor: a.color,
+                    ...(statusBorderColor && {
+                      border: `1px solid ${statusBorderColor}`,
+                    }),
                     borderRadius: 2,
                     opacity: row.isGroup && !row.isCollapsed ? 0.3 : 1,
                     fontSize: 5,

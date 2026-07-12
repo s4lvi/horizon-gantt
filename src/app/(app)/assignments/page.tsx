@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AssignmentsView } from "@/components/assignments/assignments-view";
 
+const PROFILE_FIELDS = "profiles(id, email, full_name, avatar_url)";
+
 export default async function AssignmentsPage() {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -9,27 +11,38 @@ export default async function AssignmentsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // My assignments
-  const { data: myActivities } = await admin
-    .from("activities")
-    .select(
-      "*, charts(id, title, organization_id), profiles(*), checklist_items:activity_checklist_items(*)"
-    )
-    .eq("assignee_id", user!.id)
-    .order("start_date", { ascending: true });
-
-  // My projects (not deleted)
-  const { data: myCharts } = await admin
-    .from("charts")
-    .select("id, title, organization_id")
-    .eq("owner_id", user!.id)
-    .is("deleted_at", null);
-
-  // Org memberships
-  const { data: orgMemberships } = await admin
-    .from("organization_members")
-    .select("organization_id, organizations(id, name, logo_url)")
-    .eq("user_id", user!.id);
+  const [
+    { data: myActivities },
+    { data: myCharts },
+    { data: orgMemberships },
+    { data: editShares },
+  ] = await Promise.all([
+    // My assignments
+    admin
+      .from("activities")
+      .select(
+        `*, charts(id, title, organization_id), ${PROFILE_FIELDS}, checklist_items:activity_checklist_items(*)`
+      )
+      .eq("assignee_id", user!.id)
+      .order("start_date", { ascending: true }),
+    // My projects (not deleted)
+    admin
+      .from("charts")
+      .select("id, title, organization_id")
+      .eq("owner_id", user!.id)
+      .is("deleted_at", null),
+    // Org memberships
+    admin
+      .from("organization_members")
+      .select("organization_id, organizations(id, name, logo_url)")
+      .eq("user_id", user!.id),
+    // Charts shared with me with edit permission
+    admin
+      .from("chart_shares")
+      .select("chart_id")
+      .eq("user_id", user!.id)
+      .eq("permission", "edit"),
+  ]);
 
   const orgIds = orgMemberships?.map((m: any) => m.organization_id) || [];
 
@@ -56,7 +69,7 @@ export default async function AssignmentsPage() {
     const { data } = await admin
       .from("activities")
       .select(
-        "*, charts(id, title, organization_id), profiles(*), checklist_items:activity_checklist_items(*)"
+        `*, charts(id, title, organization_id), ${PROFILE_FIELDS}, checklist_items:activity_checklist_items(*)`
       )
       .in("chart_id", uniqueChartIds)
       .order("start_date", { ascending: true });
@@ -70,13 +83,21 @@ export default async function AssignmentsPage() {
 
   const orgs = orgMemberships?.map((m: any) => m.organizations) || [];
 
+  // Charts the user can edit: owned, org-member, or edit-share.
+  const editableChartIds = [
+    ...new Set([
+      ...uniqueChartIds,
+      ...(editShares || []).map((s: any) => s.chart_id),
+    ]),
+  ];
+
   return (
     <AssignmentsView
       myActivities={myActivities || []}
       allActivities={allActivities}
       projects={projects}
       orgs={orgs}
-      currentUserId={user!.id}
+      editableChartIds={editableChartIds}
     />
   );
 }

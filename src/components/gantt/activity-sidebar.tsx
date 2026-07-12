@@ -328,6 +328,30 @@ export function ActivitySidebar({
     }
   };
 
+  // Diff against the pre-drop snapshot and persist only rows whose order or
+  // parent actually changed; roll the store back if the save fails.
+  const persistOrderChanges = async (before: Activity[]) => {
+    const updated = useGanttStore.getState().activities;
+    const beforeById = new Map(before.map((a) => [a.id, a]));
+    const changed = updated.filter((a) => {
+      const b = beforeById.get(a.id);
+      return b && (b.sort_order !== a.sort_order || b.parent_id !== a.parent_id);
+    });
+    if (changed.length === 0) return;
+    try {
+      await bulkUpdateActivities(
+        changed.map((a) => ({
+          id: a.id,
+          sort_order: a.sort_order,
+          parent_id: a.parent_id,
+        }))
+      );
+    } catch {
+      useGanttStore.getState().setActivities(before);
+      toast.error("Failed to save changes");
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setDraggedId(null);
@@ -336,26 +360,15 @@ export function ActivitySidebar({
 
     if (!over || active.id === over.id) return;
 
-    const dragged = activities.find((a) => a.id === active.id);
-    if (!dragged) return;
-
     const store = useGanttStore.getState();
+    const before = store.activities;
+    const dragged = before.find((a) => a.id === active.id);
+    if (!dragged) return;
 
     // Handle ungroup drop zone
     if (over.id === "__ungroup__") {
       store.reorderWithinParent(dragged.id, null, null, "after");
-      const updated = useGanttStore.getState().activities;
-      try {
-        await bulkUpdateActivities(
-          updated.map((a) => ({
-            id: a.id,
-            sort_order: a.sort_order,
-            ...(a.id === dragged.id ? { parent_id: null } : {}),
-          }))
-        );
-      } catch {
-        toast.error("Failed to save changes");
-      }
+      await persistOrderChanges(before);
       return;
     }
 
@@ -407,23 +420,7 @@ export function ActivitySidebar({
     }
 
     store.reorderWithinParent(dragged.id, newParentId, targetSiblingId, position);
-
-    // Persist all changes
-    const updatedActivities = useGanttStore.getState().activities;
-    const parentChanged = dragged.parent_id !== newParentId;
-    try {
-      await bulkUpdateActivities(
-        updatedActivities.map((a) => ({
-          id: a.id,
-          sort_order: a.sort_order,
-          ...(a.id === dragged.id && parentChanged
-            ? { parent_id: newParentId }
-            : {}),
-        }))
-      );
-    } catch {
-      toast.error("Failed to save changes");
-    }
+    await persistOrderChanges(before);
   };
 
   const handleDragCancel = () => {

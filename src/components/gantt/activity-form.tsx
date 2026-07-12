@@ -20,7 +20,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatDateShort, isPastDue } from "@/lib/utils/dates";
+import { isPastDue } from "@/lib/utils/dates";
 
 const COLORS = [
   "#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6",
@@ -37,7 +37,7 @@ export function ActivityForm({
   members: Profile[];
   chartId: string;
 }) {
-  const { activities, updateActivity: updateStore, setSelectedActivityId } =
+  const { activities, canEdit, updateActivity: updateStore, setSelectedActivityId } =
     useGanttStore();
   const [expanded, setExpanded] = useState(false);
 
@@ -49,10 +49,16 @@ export function ActivityForm({
     !activity.is_group && !activity.is_done && isPastDue(activity.end_date);
 
   const handleUpdate = async (updates: Partial<Activity>) => {
+    if (!canEdit) return;
+    const prev: Partial<Activity> = {};
+    for (const key of Object.keys(updates) as (keyof Activity)[]) {
+      (prev as any)[key] = activity[key];
+    }
     updateStore(activity.id, updates);
     try {
       await updateActivity(activity.id, updates as any);
     } catch {
+      updateStore(activity.id, prev);
       toast.error("Failed to update activity");
     }
   };
@@ -68,32 +74,39 @@ export function ActivityForm({
 
   const handleAddItem = async () => {
     const title = newItemTitle.trim();
-    if (!title) return;
+    if (!title || !canEdit) return;
     setNewItemTitle("");
     try {
       const item = await createChecklistItem(activity.id, title);
       setChecklist([...(activity.checklist_items || []), item]);
     } catch {
+      setNewItemTitle(title);
       toast.error("Failed to add checklist item");
     }
   };
 
   const handleToggleItem = (item: ChecklistItem) => {
+    if (!canEdit) return;
+    const prevItems = activity.checklist_items || [];
     setChecklist(
       checklist.map((i) =>
         i.id === item.id ? { ...i, is_done: !item.is_done } : i
       )
     );
-    updateChecklistItem(item.id, { is_done: !item.is_done }).catch(() =>
-      toast.error("Failed to update checklist item")
-    );
+    updateChecklistItem(item.id, { is_done: !item.is_done }).catch(() => {
+      setChecklist(prevItems);
+      toast.error("Failed to update checklist item");
+    });
   };
 
   const handleDeleteItem = (item: ChecklistItem) => {
+    if (!canEdit) return;
+    const prevItems = activity.checklist_items || [];
     setChecklist(checklist.filter((i) => i.id !== item.id));
-    deleteChecklistItem(item.id).catch(() =>
-      toast.error("Failed to delete checklist item")
-    );
+    deleteChecklistItem(item.id).catch(() => {
+      setChecklist(prevItems);
+      toast.error("Failed to delete checklist item");
+    });
   };
 
   return (

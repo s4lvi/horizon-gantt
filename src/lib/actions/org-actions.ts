@@ -1,9 +1,11 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { assertOrgRole } from "@/lib/authz";
 
 export async function createOrganization(name: string) {
   const supabase = await createClient();
@@ -42,7 +44,10 @@ export async function inviteMember(orgId: string, email: string) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  z.string().email().parse(email);
+
   const admin = createAdminClient();
+  await assertOrgRole(admin, user.id, orgId, ["owner", "admin"]);
 
   const { data: profile } = await admin
     .from("profiles")
@@ -86,10 +91,13 @@ export async function removeMember(orgId: string, memberId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertOrgRole(admin, user.id, orgId, ["owner", "admin"]);
+
   const { error } = await admin
     .from("organization_members")
     .delete()
-    .eq("id", memberId);
+    .eq("id", memberId)
+    .eq("organization_id", orgId);
   if (error) throw new Error(error.message);
   revalidatePath(`/organizations/${orgId}`);
 }
@@ -110,6 +118,12 @@ export async function acceptInvite(inviteId: string) {
     .single();
 
   if (!invite) throw new Error("Invite not found");
+  if (
+    !user.email ||
+    invite.email.toLowerCase() !== user.email.toLowerCase()
+  ) {
+    throw new Error("This invite was sent to a different email address");
+  }
 
   const { error: memberError } = await admin
     .from("organization_members")
@@ -136,6 +150,8 @@ export async function updateOrganization(
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertOrgRole(admin, user.id, orgId, ["owner", "admin"]);
+
   const { error } = await admin
     .from("organizations")
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -153,6 +169,8 @@ export async function createOrgInviteLink(orgId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertOrgRole(admin, user.id, orgId, ["owner", "admin"]);
+
   const { data, error } = await admin
     .from("organization_invite_links")
     .insert({
@@ -167,7 +185,15 @@ export async function createOrgInviteLink(orgId: string) {
 }
 
 export async function getOrgInviteLinks(orgId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const admin = createAdminClient();
+  await assertOrgRole(admin, user.id, orgId, ["owner", "admin"]);
+
   const { data, error } = await admin
     .from("organization_invite_links")
     .select("*")
@@ -186,10 +212,13 @@ export async function deleteOrgInviteLink(linkId: string, orgId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertOrgRole(admin, user.id, orgId, ["owner", "admin"]);
+
   const { error } = await admin
     .from("organization_invite_links")
     .delete()
-    .eq("id", linkId);
+    .eq("id", linkId)
+    .eq("organization_id", orgId);
   if (error) throw new Error(error.message);
   revalidatePath(`/organizations/${orgId}`);
 }

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ProjectComment } from "@/lib/types";
+import { assertCanViewChart } from "@/lib/authz";
 
 export async function getComments(chartId: string): Promise<ProjectComment[]> {
   const supabase = await createClient();
@@ -12,6 +13,8 @@ export async function getComments(chartId: string): Promise<ProjectComment[]> {
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertCanViewChart(admin, user.id, chartId);
+
   const { data, error } = await admin
     .from("project_comments")
     .select("*, profiles(id, email, full_name, avatar_url)")
@@ -31,8 +34,13 @@ export async function addComment(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
+  if (!content.trim() || content.length > 5000) {
+    throw new Error("Invalid comment");
+  }
 
   const admin = createAdminClient();
+  await assertCanViewChart(admin, user.id, chartId);
+
   const { data, error } = await admin
     .from("project_comments")
     .insert({

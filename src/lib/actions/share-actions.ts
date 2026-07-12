@@ -1,9 +1,14 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { SharePermission } from "@/lib/types";
+import { assertChartOwner } from "@/lib/authz";
+
+const emailSchema = z.string().email();
+const permissionSchema = z.enum(["view", "edit"]);
 
 export async function shareChart(
   chartId: string,
@@ -16,7 +21,11 @@ export async function shareChart(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  emailSchema.parse(email);
+  permissionSchema.parse(permission);
+
   const admin = createAdminClient();
+  await assertChartOwner(admin, user.id, chartId);
 
   const { data: profile } = await admin
     .from("profiles")
@@ -49,19 +58,30 @@ export async function removeShare(shareId: string, chartId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertChartOwner(admin, user.id, chartId);
+
   const { error } = await admin
     .from("chart_shares")
     .delete()
-    .eq("id", shareId);
+    .eq("id", shareId)
+    .eq("chart_id", chartId);
   if (error) throw new Error(error.message);
   revalidatePath(`/charts/${chartId}`);
 }
 
 export async function getChartShares(chartId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const admin = createAdminClient();
+  await assertChartOwner(admin, user.id, chartId);
+
   const { data, error } = await admin
     .from("chart_shares")
-    .select("*, profiles(*)")
+    .select("*, profiles(id, email, full_name, avatar_url)")
     .eq("chart_id", chartId);
 
   if (error) throw new Error(error.message);
@@ -78,7 +98,11 @@ export async function createShareLink(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  permissionSchema.parse(permission);
+
   const admin = createAdminClient();
+  await assertChartOwner(admin, user.id, chartId);
+
   const { data, error } = await admin
     .from("chart_share_links")
     .insert({
@@ -94,7 +118,15 @@ export async function createShareLink(
 }
 
 export async function getShareLinks(chartId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const admin = createAdminClient();
+  await assertChartOwner(admin, user.id, chartId);
+
   const { data, error } = await admin
     .from("chart_share_links")
     .select("*")
@@ -113,10 +145,13 @@ export async function deleteShareLink(linkId: string, chartId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertChartOwner(admin, user.id, chartId);
+
   const { error } = await admin
     .from("chart_share_links")
     .delete()
-    .eq("id", linkId);
+    .eq("id", linkId)
+    .eq("chart_id", chartId);
   if (error) throw new Error(error.message);
   revalidatePath(`/charts/${chartId}`);
 }

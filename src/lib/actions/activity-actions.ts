@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assertCanEditChart } from "@/lib/authz";
 
 async function touchChart(admin: ReturnType<typeof createAdminClient>, chartId: string) {
   await admin
@@ -22,6 +23,7 @@ export async function createActivity(
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
+  await assertCanEditChart(admin, user.id, chartId);
 
   // Get next sort_order scoped to the same parent
   let query = admin
@@ -94,12 +96,13 @@ export async function updateActivity(
 
   const admin = createAdminClient();
 
-  // Get chart_id to touch the chart
   const { data: activity } = await admin
     .from("activities")
     .select("chart_id")
     .eq("id", activityId)
     .single();
+  if (!activity) throw new Error("Activity not found");
+  await assertCanEditChart(admin, user.id, activity.chart_id);
 
   const { error } = await admin
     .from("activities")
@@ -107,7 +110,7 @@ export async function updateActivity(
     .eq("id", activityId);
 
   if (error) throw new Error(error.message);
-  if (activity) await touchChart(admin, activity.chart_id);
+  await touchChart(admin, activity.chart_id);
 }
 
 export async function deleteActivity(activityId: string) {
@@ -124,13 +127,15 @@ export async function deleteActivity(activityId: string) {
     .select("chart_id")
     .eq("id", activityId)
     .single();
+  if (!activity) throw new Error("Activity not found");
+  await assertCanEditChart(admin, user.id, activity.chart_id);
 
   const { error } = await admin
     .from("activities")
     .delete()
     .eq("id", activityId);
   if (error) throw new Error(error.message);
-  if (activity) await touchChart(admin, activity.chart_id);
+  await touchChart(admin, activity.chart_id);
 }
 
 export async function bulkUpdateActivities(
@@ -142,6 +147,8 @@ export async function bulkUpdateActivities(
     parent_id?: string | null;
   }[]
 ) {
+  if (updates.length === 0) return;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -149,12 +156,33 @@ export async function bulkUpdateActivities(
   if (!user) throw new Error("Not authenticated");
 
   const admin = createAdminClient();
-  for (const update of updates) {
-    const { id, ...fields } = update;
-    const { error } = await admin
-      .from("activities")
-      .update({ ...fields, updated_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw new Error(error.message);
+
+  // Authorize against every distinct chart touched (normally just one).
+  const { data: rows } = await admin
+    .from("activities")
+    .select("chart_id")
+    .in(
+      "id",
+      updates.map((u) => u.id)
+    );
+  const chartIds = [...new Set((rows || []).map((r) => r.chart_id))];
+  for (const chartId of chartIds) {
+    await assertCanEditChart(admin, user.id, chartId);
+  }
+
+  // Run updates concurrently and aggregate failures instead of stopping at
+  // the first error, so a partial failure is at least reported accurately.
+  const timestamp = new Date().toISOString();
+  const results = await Promise.all(
+    updates.map(({ id, ...fields }) =>
+      admin
+        .from("activities")
+        .update({ ...fields, updated_at: timestamp })
+        .eq("id", id)
+    )
+  );
+  const failed = results.filter((r) => r.error);
+  if (failed.length > 0) {
+    throw new Error(`${failed.length} of ${updates.length} updates failed`);
   }
 }

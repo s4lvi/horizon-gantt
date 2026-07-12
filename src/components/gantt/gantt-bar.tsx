@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { memo, useRef } from "react";
 import { DisplayRow } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { dateToPixel, pixelToDate, isPastDue } from "@/lib/utils/dates";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils/cn";
 import { toast } from "sonner";
 import { Link2 } from "lucide-react";
 
-export function GanttBar({
+function GanttBarInner({
   displayRow,
   index,
   timelineStart,
@@ -28,18 +28,12 @@ export function GanttBar({
   chartId: string;
 }) {
   const activity = displayRow.activity;
-  const {
-    viewMode,
-    canEdit,
-    linkState,
-    activities,
-    setDragState,
-    setLinkState,
-    updateActivity: updateActivityStore,
-    setActivities,
-    setSelectedActivityId,
-    selectedActivityId,
-  } = useGanttStore();
+  // Selective subscriptions so a store change (e.g. another bar mid-drag)
+  // doesn't re-render every bar. Actions are read via getState() in handlers.
+  const viewMode = useGanttStore((s) => s.viewMode);
+  const canEdit = useGanttStore((s) => s.canEdit);
+  const linkState = useGanttStore((s) => s.linkState);
+  const isSelected = useGanttStore((s) => s.selectedActivityId === activity.id);
 
   const barRef = useRef<HTMLDivElement>(null);
 
@@ -113,7 +107,7 @@ export function GanttBar({
           const endDate = addDays(date, viewMode === "months-weeks" ? 7 : 3);
           const startStr = format(date, "yyyy-MM-dd");
           const endStr = format(endDate, "yyyy-MM-dd");
-          updateActivityStore(activity.id, {
+          useGanttStore.getState().updateActivity(activity.id, {
             start_date: startStr,
             end_date: endStr,
           });
@@ -158,9 +152,15 @@ export function GanttBar({
     const scrollContainer = barRef.current?.closest(".overflow-auto");
     const initialScrollLeft = scrollContainer?.scrollLeft ?? 0;
 
+    const { setDragState, setActivities, updateActivity: updateActivityStore } =
+      useGanttStore.getState();
+    // Snapshot the pre-drag state: used for child originals, the changed-rows
+    // diff at drag end, and rollback if the save fails.
+    const preDrag = useGanttStore.getState().activities;
+
     // Snapshot original dates for each child when moving a collapsed group.
     const childOriginals = isCollapsedGroup
-      ? activities
+      ? preDrag
           .filter(
             (a) =>
               a.parent_id === activity.id && a.start_date && a.end_date
@@ -257,7 +257,7 @@ export function GanttBar({
       setActivities(cascaded);
 
       const changed = cascaded.filter((a) => {
-        const orig = activities.find((o) => o.id === a.id);
+        const orig = preDrag.find((o) => o.id === a.id);
         return (
           orig &&
           (orig.start_date !== a.start_date || orig.end_date !== a.end_date)
@@ -271,15 +271,17 @@ export function GanttBar({
             start_date: a.start_date!,
             end_date: a.end_date!,
           }))
-        ).catch(() => toast.error("Failed to save changes"));
+        ).catch(() => {
+          // Roll the optimistic drag back so the UI matches the server.
+          useGanttStore.getState().setActivities(preDrag);
+          toast.error("Failed to save changes");
+        });
       }
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
   };
-
-  const isSelected = selectedActivityId === activity.id;
 
   // Status border: done (bright green) takes precedence over past due (bright red).
   // Only leaf activities carry a status; groups are aggregates.
@@ -323,6 +325,7 @@ export function GanttBar({
       }}
       onClick={(e) => {
         e.stopPropagation();
+        const store = useGanttStore.getState();
         if (linkState) {
           const successorId = linkState.fromActivityId;
           if (successorId !== activity.id) {
@@ -332,10 +335,10 @@ export function GanttBar({
               })
             );
           }
-          setLinkState(null);
+          store.setLinkState(null);
           return;
         }
-        setSelectedActivityId(isSelected ? null : activity.id);
+        store.setSelectedActivityId(isSelected ? null : activity.id);
       }}
       onMouseDown={(e) => {
         if (isCollapsedGroup) {
@@ -376,7 +379,7 @@ export function GanttBar({
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
-            setLinkState({ fromActivityId: activity.id });
+            useGanttStore.getState().setLinkState({ fromActivityId: activity.id });
             toast.info("Click the activity this depends on");
           }}
         >
@@ -386,3 +389,22 @@ export function GanttBar({
     </div>
   );
 }
+
+// The store's updateActivity keeps object identity for untouched activities,
+// so comparing displayRow contents lets all other bars skip re-rendering
+// while one bar is being dragged.
+export const GanttBar = memo(GanttBarInner, (prev, next) => {
+  return (
+    prev.displayRow.activity === next.displayRow.activity &&
+    prev.displayRow.isGroup === next.displayRow.isGroup &&
+    prev.displayRow.isCollapsed === next.displayRow.isCollapsed &&
+    prev.displayRow.groupStartDate === next.displayRow.groupStartDate &&
+    prev.displayRow.groupEndDate === next.displayRow.groupEndDate &&
+    prev.displayRow.depth === next.displayRow.depth &&
+    prev.index === next.index &&
+    prev.timelineStart.getTime() === next.timelineStart.getTime() &&
+    prev.columnWidth === next.columnWidth &&
+    prev.rowHeight === next.rowHeight &&
+    prev.chartId === next.chartId
+  );
+});

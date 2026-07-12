@@ -1,8 +1,9 @@
 "use client";
 
+import { memo } from "react";
 import { ColumnInfo } from "@/lib/utils/dates";
 
-export function GanttGrid({
+function GanttGridInner({
   columns,
   columnWidth,
   height,
@@ -29,3 +30,14 @@ export function GanttGrid({
     </div>
   );
 }
+
+// The columns array is rebuilt every parent render; compare its extent
+// instead so the grid skips re-rendering during drags.
+export const GanttGrid = memo(GanttGridInner, (prev, next) => {
+  return (
+    prev.columns.length === next.columns.length &&
+    prev.columns[0]?.date.getTime() === next.columns[0]?.date.getTime() &&
+    prev.columnWidth === next.columnWidth &&
+    prev.height === next.height
+  );
+});
