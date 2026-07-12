@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Profile, Organization } from "@/lib/types";
@@ -44,6 +45,7 @@ export function Sidebar({
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/assignments", label: "My Assignments", icon: ClipboardList },
     { href: "/organizations", label: "Organizations", icon: Building2 },
+    { href: "/settings", label: "Settings", icon: Settings },
   ];
 
   return (
