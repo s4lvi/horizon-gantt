@@ -202,6 +202,13 @@ function SortableRow({
             {activity.title}
           </span>
         )}
+
+        {!row.isGroup && (activity.checklist_items?.length ?? 0) > 0 && (
+          <span className="flex-shrink-0 text-[10px] text-gray-400 tabular-nums">
+            {activity.checklist_items!.filter((i) => i.is_done).length}/
+            {activity.checklist_items!.length}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-0.5 pr-1 flex-shrink-0">

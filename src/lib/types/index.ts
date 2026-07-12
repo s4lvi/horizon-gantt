@@ -79,6 +79,17 @@ export type Activity = {
   created_at: string;
   updated_at: string;
   profiles?: Profile | null;
+  checklist_items?: ChecklistItem[];
+};
+
+export type ChecklistItem = {
+  id: string;
+  activity_id: string;
+  title: string;
+  is_done: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 };
 
 export type ActivityAttachment = {

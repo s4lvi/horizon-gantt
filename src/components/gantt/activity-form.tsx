@@ -1,10 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, Profile } from "@/lib/types";
+import { Activity, ChecklistItem, Profile } from "@/lib/types";
 import { useGanttStore } from "@/lib/stores/gantt-store";
 import { updateActivity } from "@/lib/actions/activity-actions";
-import { X, ChevronDown, ChevronUp, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
+import {
+  createChecklistItem,
+  updateChecklistItem,
+  deleteChecklistItem,
+} from "@/lib/actions/checklist-actions";
+import {
+  X,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Circle,
+  AlertTriangle,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { toast } from "sonner";
 import { formatDateShort, isPastDue } from "@/lib/utils/dates";
 
@@ -41,6 +55,45 @@ export function ActivityForm({
     } catch {
       toast.error("Failed to update activity");
     }
+  };
+
+  const checklist = [...(activity.checklist_items || [])].sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+  const checklistDone = checklist.filter((i) => i.is_done).length;
+  const [newItemTitle, setNewItemTitle] = useState("");
+
+  const setChecklist = (items: ChecklistItem[]) =>
+    updateStore(activity.id, { checklist_items: items });
+
+  const handleAddItem = async () => {
+    const title = newItemTitle.trim();
+    if (!title) return;
+    setNewItemTitle("");
+    try {
+      const item = await createChecklistItem(activity.id, title);
+      setChecklist([...(activity.checklist_items || []), item]);
+    } catch {
+      toast.error("Failed to add checklist item");
+    }
+  };
+
+  const handleToggleItem = (item: ChecklistItem) => {
+    setChecklist(
+      checklist.map((i) =>
+        i.id === item.id ? { ...i, is_done: !item.is_done } : i
+      )
+    );
+    updateChecklistItem(item.id, { is_done: !item.is_done }).catch(() =>
+      toast.error("Failed to update checklist item")
+    );
+  };
+
+  const handleDeleteItem = (item: ChecklistItem) => {
+    setChecklist(checklist.filter((i) => i.id !== item.id));
+    deleteChecklistItem(item.id).catch(() =>
+      toast.error("Failed to delete checklist item")
+    );
   };
 
   return (
@@ -207,7 +260,7 @@ export function ActivityForm({
 
       {/* Expanded detail fields */}
       {expanded && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-100">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
               Description
@@ -232,6 +285,67 @@ export function ActivityForm({
               className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none resize-none"
             />
           </div>
+          {!activity.is_group && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Checklist
+                {checklist.length > 0 && (
+                  <span className="ml-1 text-gray-400 font-normal">
+                    ({checklistDone}/{checklist.length})
+                  </span>
+                )}
+              </label>
+              <div className="space-y-1">
+                {checklist.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-2 group/check"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.is_done}
+                      onChange={() => handleToggleItem(item)}
+                      className="accent-green-600 flex-shrink-0 cursor-pointer"
+                    />
+                    <span
+                      className={`flex-1 text-sm truncate ${
+                        item.is_done
+                          ? "line-through text-gray-400"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {item.title}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteItem(item)}
+                      className="opacity-0 group-hover/check:opacity-100 text-gray-300 hover:text-red-500 transition-opacity flex-shrink-0"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-1">
+                  <input
+                    value={newItemTitle}
+                    onChange={(e) => setNewItemTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddItem();
+                    }}
+                    placeholder="Add item..."
+                    className="flex-1 px-2 py-1 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-[var(--brand-navy)] focus:border-transparent outline-none"
+                  />
+                  <button
+                    onClick={handleAddItem}
+                    disabled={!newItemTitle.trim()}
+                    className="p-1 text-gray-400 hover:text-[var(--brand-navy)] disabled:opacity-40 disabled:hover:text-gray-400"
+                    title="Add item"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

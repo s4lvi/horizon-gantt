@@ -12,7 +12,9 @@ export default async function AssignmentsPage() {
   // My assignments
   const { data: myActivities } = await admin
     .from("activities")
-    .select("*, charts(id, title, organization_id), profiles(*)")
+    .select(
+      "*, charts(id, title, organization_id), profiles(*), checklist_items:activity_checklist_items(*)"
+    )
     .eq("assignee_id", user!.id)
     .order("start_date", { ascending: true });
 
@@ -53,7 +55,9 @@ export default async function AssignmentsPage() {
   if (uniqueChartIds.length > 0) {
     const { data } = await admin
       .from("activities")
-      .select("*, charts(id, title, organization_id), profiles(*)")
+      .select(
+        "*, charts(id, title, organization_id), profiles(*), checklist_items:activity_checklist_items(*)"
+      )
       .in("chart_id", uniqueChartIds)
       .order("start_date", { ascending: true });
     allActivities = data || [];

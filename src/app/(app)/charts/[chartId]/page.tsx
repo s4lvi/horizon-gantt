@@ -26,7 +26,7 @@ export default async function ChartPage({
 
   const { data: activities } = await admin
     .from("activities")
-    .select("*, profiles(*)")
+    .select("*, profiles(*), checklist_items:activity_checklist_items(*)")
     .eq("chart_id", chartId)
     .order("sort_order", { ascending: true });
 
