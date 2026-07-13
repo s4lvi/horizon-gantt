@@ -506,9 +506,12 @@ const handler = createMcpHandler(
 );
 
 // Bearer tokens are minted in Settings → API Tokens; only their SHA-256 hash is stored.
-const verifyToken = async (_req: Request, bearerToken?: string) => {
-  if (!bearerToken) return undefined;
-  const tokenHash = createHash("sha256").update(bearerToken).digest("hex");
+// A ?token= query param is also accepted for clients that can't send custom
+// headers (claude.ai custom connectors).
+const verifyToken = async (req: Request, bearerToken?: string) => {
+  const token = bearerToken || new URL(req.url).searchParams.get("token");
+  if (!token) return undefined;
+  const tokenHash = createHash("sha256").update(token).digest("hex");
   const admin = createAdminClient();
   const { data: row } = await admin
     .from("api_tokens")
@@ -523,7 +526,7 @@ const verifyToken = async (_req: Request, bearerToken?: string) => {
     .eq("id", row.id);
 
   return {
-    token: bearerToken,
+    token,
     scopes: ["gantt"],
     clientId: row.user_id,
     extra: { userId: row.user_id },
