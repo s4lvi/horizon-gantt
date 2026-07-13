@@ -156,6 +156,40 @@ export async function deleteShareLink(linkId: string, chartId: string) {
   revalidatePath(`/charts/${chartId}`);
 }
 
+// Reuses an existing non-expiring view link (or creates one) so the public
+// schedule URL at /schedule/[token] stays stable per chart.
+export async function getPublicScheduleLink(chartId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const admin = createAdminClient();
+  await assertChartOwner(admin, user.id, chartId);
+
+  const { data: existing } = await admin
+    .from("chart_share_links")
+    .select("token")
+    .eq("chart_id", chartId)
+    .eq("permission", "view")
+    .is("expires_at", null)
+    .limit(1);
+  if (existing && existing.length > 0) return existing[0].token as string;
+
+  const { data, error } = await admin
+    .from("chart_share_links")
+    .insert({
+      chart_id: chartId,
+      permission: "view",
+      created_by: user.id,
+    })
+    .select("token")
+    .single();
+  if (error) throw new Error(error.message);
+  return data.token as string;
+}
+
 export async function acceptShareLink(token: string) {
   const supabase = await createClient();
   const {

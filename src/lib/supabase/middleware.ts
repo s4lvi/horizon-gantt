@@ -37,12 +37,14 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === "/login" ||
     request.nextUrl.pathname.startsWith("/callback");
   const isPublicPage = request.nextUrl.pathname === "/";
-  // MCP endpoint authenticates via bearer token, not cookies — never redirect it.
-  const isMcpRoute =
+  // Token-authenticated routes (MCP bearer tokens, public schedule share
+  // links) don't use cookies — never redirect them to login.
+  const isTokenRoute =
     request.nextUrl.pathname.startsWith("/api/mcp") ||
-    request.nextUrl.pathname.startsWith("/.well-known/");
+    request.nextUrl.pathname.startsWith("/.well-known/") ||
+    request.nextUrl.pathname.startsWith("/schedule/");
 
-  if (!user && !isAuthPage && !isPublicPage && !isMcpRoute) {
+  if (!user && !isAuthPage && !isPublicPage && !isTokenRoute) {
     const url = request.nextUrl.clone();
     const returnTo = request.nextUrl.pathname + request.nextUrl.search;
     url.pathname = "/login";

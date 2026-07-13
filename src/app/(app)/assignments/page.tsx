@@ -98,6 +98,7 @@ export default async function AssignmentsPage() {
       projects={projects}
       orgs={orgs}
       editableChartIds={editableChartIds}
+      ownedChartIds={(myCharts || []).map((c: any) => c.id)}
     />
   );
 }

@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect } from "react";
 import { format, startOfWeek, endOfWeek, parseISO, isWithinInterval } from "date-fns";
 import { isPastDue } from "@/lib/utils/dates";
 import { updateChecklistItem } from "@/lib/actions/checklist-actions";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { getPublicScheduleLink } from "@/lib/actions/share-actions";
+import { AlertTriangle, CheckCircle2, Link2 } from "lucide-react";
 import { toast } from "sonner";
 
 function ActivityRow({
@@ -178,16 +179,31 @@ export function AssignmentsView({
   projects,
   orgs,
   editableChartIds,
+  ownedChartIds,
 }: {
   myActivities: any[];
   allActivities: any[];
   projects: any[];
   orgs: any[];
   editableChartIds: string[];
+  ownedChartIds: string[];
 }) {
   const [tab, setTab] = useState<"mine" | "project">("mine");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
   const editableSet = useMemo(() => new Set(editableChartIds), [editableChartIds]);
+  const ownedSet = useMemo(() => new Set(ownedChartIds), [ownedChartIds]);
+
+  const handleCopyPublicLink = async () => {
+    try {
+      const token = await getPublicScheduleLink(selectedProjectId);
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/schedule/${token}`
+      );
+      toast.success("Public schedule link copied");
+    } catch {
+      toast.error("Failed to create link");
+    }
+  };
 
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
@@ -254,6 +270,19 @@ export function AssignmentsView({
             })}
           </select>
         )}
+
+        {tab === "project" &&
+          selectedProjectId !== "all" &&
+          ownedSet.has(selectedProjectId) && (
+            <button
+              onClick={handleCopyPublicLink}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              title="Copy a link that shows this project's schedule without signing in"
+            >
+              <Link2 size={14} />
+              Copy public link
+            </button>
+          )}
       </div>
 
       {/* Overdue */}
